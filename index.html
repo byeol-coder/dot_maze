@@ -200,6 +200,7 @@ button{font:inherit;cursor:pointer;}
 #game-area{position:absolute;inset:0;overflow:hidden;}
 #canvas-wrap{position:absolute;inset:0;overflow:hidden;background:radial-gradient(circle at 50% 45%,#0c0a22,#050310);}
 #game-canvas{display:block;position:absolute;top:50%;left:50%;transform-origin:center;image-rendering:pixelated;}
+#game-canvas-3d{position:absolute;inset:0;width:100%;height:100%;}
 .sr-only{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;overflow:hidden!important;}
 .ico{display:inline-block;vertical-align:middle;flex:0 0 auto;}
 
@@ -474,6 +475,7 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
     <!-- full-bleed dungeon -->
     <div id="canvas-wrap" tabindex="0" role="img" aria-label="게임 화면" aria-describedby="a11y-live">
       <canvas id="game-canvas"></canvas>
+      <canvas id="game-canvas-3d" style="display:none"></canvas>
     </div>
 
     <!-- TOP-LEFT: quest bar -->
@@ -609,6 +611,10 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
         <input type="checkbox" id="set-tts" class="set-switch"></label>
       <label class="set-row"><span data-i="set_haptic">진동</span>
         <input type="checkbox" id="set-haptic" class="set-switch"></label>
+      <label class="set-row"><span data-i="set_haptic_int">진동 세기</span>
+        <input type="range" id="set-haptic-int" min="0" max="1" step="0.05" class="set-range"></label>
+      <label class="set-row"><span data-i="set_3d">3D 입체 화면</span>
+        <input type="checkbox" id="set-3d" class="set-switch"></label>
       <label class="set-row"><span data-i="set_contrast">고대비 화면</span>
         <input type="checkbox" id="set-contrast" class="set-switch"></label>
       <label class="set-row"><span data-i="set_motion">모션 줄이기</span>
@@ -826,6 +832,7 @@ const T = {
     set_contrast:'고대비 화면', set_motion:'모션 줄이기', set_close:'닫기',
     lg_you:'나', lg_target:'목표', voiceOn:'음성 켜짐', voiceOff:'음성 꺼짐',
     ctl_move:'이동', ctl_scan:'스캔', ctl_act:'상호작용', toHubMsg:'메인 화면으로 돌아왔어요.',
+    set_haptic_int:'진동 세기', set_3d:'3D 입체 화면',
     next:'다음 월드', replay:'다시 하기', tohub:'메인으로', selectworld:'월드 선택', close:'닫기',
     locked:'잠김', wall:'벽이에요!', goalOpen:'출구예요! 들어가세요!',
     needMore:(n)=>`아직 ${n}개 더 남았어요!`,
@@ -853,6 +860,7 @@ const T = {
     set_contrast:'High contrast', set_motion:'Reduce motion', set_close:'Close',
     lg_you:'You', lg_target:'Target', voiceOn:'Voice On', voiceOff:'Voice Off',
     ctl_move:'Move', ctl_scan:'Scan', ctl_act:'Interact', toHubMsg:'Back to the main screen.',
+    set_haptic_int:'Vibration strength', set_3d:'3D view',
     next:'Next World', replay:'Retry', tohub:'Home', selectworld:'Select World', close:'Close',
     locked:'Locked', wall:'Wall!', goalOpen:'Exit! Go through!',
     needMore:(n)=>`${n} more to go!`,
@@ -921,6 +929,7 @@ class AudioEngine {
   }
   // Per-world ambient soundscape (procedural drones + slow filter sweep)
   startAmbient(idx=0){
+    this._worldIdx=idx;
     this.stopAmbient(); if(!this._on) return;
     try{ const ctx=this.ctx; const base=[120,96,76,140][idx]||110; const nodes=[];
       const filt=ctx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=600;
@@ -935,8 +944,13 @@ class AudioEngine {
   }
   stopAmbient(){ if(this._ambient){ try{ const ctx=this.ctx; this._ambient.amb.gain.setTargetAtTime(0,ctx.currentTime,0.4);
     const ns=this._ambient.nodes; setTimeout(()=>ns.forEach(n=>{try{n.stop();}catch(e){}}),700); }catch(e){} this._ambient=null; } }
-  footstep(pan=0){ this._osc(190,'sine',.08,pan,.1,.005); this._osc(95,'triangle',.06,pan,.07,.005); }
+  footstep(pan=0){ const w=this._worldIdx||0;
+    const mat=[[190,95,'sine'],[150,78,'square'],[120,60,'triangle'],[175,92,'sine']][w]||[190,95,'sine'];
+    const j=1+(Math.random()*.12-.06);
+    this._osc(mat[0]*j,mat[2],.08,pan,.1,.005); this._osc(mat[1]*j,'triangle',.06,pan,.07,.005);
+    if(w===2) setTimeout(()=>this._osc(860+Math.random()*220,'sine',.05,pan,.035,.002),35); } // cave water drip
   move(pan=0){ this.footstep(pan); }
+  wallNear(pan=0){ if(!this._on)return; this._osc(150,'sine',.09,pan,.06,.01); }
   wall(){ this._osc(90,'sawtooth',.12,0,.18); this._osc(70,'square',.1,0,.12); Haptic.buzz(45); }
   shape(cell,pan=0){ const i=SHAPE_INFO[cell]; if(!i)return; this._osc(i.freq,i.wave,.5,pan,.28); setTimeout(()=>this._osc(i.freq*1.5,'sine',.3,pan,.12),120); }
   collect(cell){ const i=SHAPE_INFO[cell],b=i?i.freq:440; [1,1.25,1.5,2].forEach((r,k)=>setTimeout(()=>this._osc(b*r,'sine',.3,0,.2),k*80)); Haptic.buzz([0,30,40,30]); }
@@ -1017,6 +1031,91 @@ class TactileEngine {
     }
   }
   update(grid,pr,pc){ const m=this.generate(grid,pr,pc); this.render(m); if(this._adapter){try{this._adapter.send(m);}catch(e){}} }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// THREE.js loader (lazy, CDN) — optional 3D view, graceful fallback to 2D
+// ═══════════════════════════════════════════════════════════════════
+let _threePromise=null;
+function loadThree(){
+  if(window.THREE) return Promise.resolve(window.THREE);
+  if(_threePromise) return _threePromise;
+  _threePromise=new Promise((res,rej)=>{ const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'; s.async=true;
+    s.onload=()=>window.THREE?res(window.THREE):rej(new Error('THREE missing'));
+    s.onerror=()=>rej(new Error('THREE load failed')); document.head.appendChild(s); });
+  return _threePromise;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDERER 3D — three.js voxel dungeon, 3rd-person follow camera
+// ═══════════════════════════════════════════════════════════════════
+class Renderer3D {
+  constructor(canvas){ const T=window.THREE; this.T=T; this.canvas=canvas; this.cell=1; this._tick=0; this._built=false;
+    this.scene=new T.Scene(); this.scene.fog=new T.Fog(0x06040f,7,28);
+    this.camera=new T.PerspectiveCamera(62,1,0.1,140);
+    this.r=new T.WebGLRenderer({canvas,antialias:true}); this.r.setPixelRatio(Math.min(window.devicePixelRatio||1,2)); this.r.setClearColor(0x06040f,1);
+    this.scene.add(new T.AmbientLight(0x7888b8,0.75));
+    const dl=new T.DirectionalLight(0xcfe0ff,0.5); dl.position.set(6,16,5); this.scene.add(dl);
+    this.torch=new T.PointLight(0xffce8a,1.05,16,2); this.scene.add(this.torch);
+    this.maze=new T.Group(); this.scene.add(this.maze);
+    this._boxGeo=new T.BoxGeometry(1,1,1); this.shapes=[]; this._pp=null; this._cam=null; this.goalMesh=null; }
+  _hex(c){ return parseInt(String(c).replace('#',''),16); }
+  _mat(color,emissive,ei){ return new this.T.MeshStandardMaterial({color,emissive:emissive!=null?emissive:0x000000,emissiveIntensity:ei||0,roughness:.85,metalness:.05}); }
+  resize(cols,rows){ this.cols=cols; this.rows=rows; this._build(); this.fit(); }
+  fit(){ const w=document.getElementById('canvas-wrap'); if(!w)return; const W=Math.max(2,w.clientWidth),H=Math.max(2,w.clientHeight);
+    this.r.setSize(W,H,false); this.camera.aspect=W/H; this.camera.updateProjectionMatrix(); }
+  _shapeMesh(cell,col){ const T=this.T; let g;
+    if(cell===C.TRIANGLE) g=new T.ConeGeometry(.4,.75,3);
+    else if(cell===C.SQUARE) g=new T.BoxGeometry(.6,.6,.6);
+    else if(cell===C.CIRCLE) g=new T.SphereGeometry(.4,18,12);
+    else if(cell===C.HEXAGON) g=new T.CylinderGeometry(.42,.42,.5,6);
+    else g=new T.OctahedronGeometry(.46);
+    return new T.Mesh(g,this._mat(col,col,.75)); }
+  _charMesh(){ const T=this.T,g=new T.Group();
+    const add=(w,h,d,col,x,y,z,em,ei)=>{ const m=new T.Mesh(new T.BoxGeometry(w,h,d),this._mat(col,em,ei)); m.position.set(x,y,z); g.add(m); return m; };
+    add(.5,.55,.32,0x2a5fd0,0,.45,0); add(.4,.4,.4,0xe8b58a,0,.95,0);
+    add(.46,.2,.46,0x7a4a25,0,1.14,0); add(.4,.42,.2,0x8a5a2a,0,.5,-.25);
+    add(.16,.26,.05,0x3ad1ff,.32,.5,.12,0x3ad1ff,.9);
+    add(.18,.4,.2,0x1a2f6b,-.13,.2,0); add(.18,.4,.2,0x1a2f6b,.13,.2,0);
+    return g; }
+  _build(){ const T=this.T, eng=window.app.engine, g=eng.grid, theme=(WORLDS[eng.worldIdx]||{}).theme||{};
+    while(this.maze.children.length) this.maze.remove(this.maze.children[0]); this.shapes=[]; this.goalMesh=null;
+    const rows=g.length, cols=g[0].length;
+    const floor=new T.Mesh(new T.BoxGeometry(cols,0.4,rows),this._mat(this._hex(theme.path||'#0a1020')));
+    floor.position.set(cols/2-.5,-.2,rows/2-.5); this.maze.add(floor);
+    const wallMat=this._mat(this._hex(theme.wall||'#1a2548'),this._hex(theme.wall||'#1a2548'),.05);
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){ const cell=g[r][c];
+      if(cell===C.WALL){ const m=new T.Mesh(this._boxGeo,wallMat); m.position.set(c,.6,r); m.scale.set(1,1.25,1); this.maze.add(m); }
+      else if(SHAPE_INFO[cell]){ const m=this._shapeMesh(cell,this._hex(SHAPE_INFO[cell].color)); m.position.set(c,.7,r); this.maze.add(m); this.shapes.push({r,c,type:cell,mesh:m,base:.7}); }
+      else if(cell>=C.N1&&cell<=C.N5){ const m=new T.Mesh(new T.CylinderGeometry(.3,.3,1.1,12),this._mat(0xa855f7,0xa855f7,.5)); m.position.set(c,.55,r); this.maze.add(m); this.shapes.push({r,c,type:cell,mesh:m,base:.55}); }
+      else if(cell===C.BLANK){ const m=new T.Mesh(this._boxGeo,this._mat(0x33304a,0xffc84a,.25)); m.scale.set(.5,.5,.5); m.position.set(c,.5,r); this.maze.add(m); }
+      else if(cell===C.GOAL){ const ring=new T.Mesh(new T.TorusGeometry(.62,.12,12,28),this._mat(0xa855f7,0x5effa0,1)); ring.position.set(c,1.0,r); this.maze.add(ring); this.goalMesh=ring; }
+    }
+    this.player=this._charMesh(); this.maze.add(this.player); this._pp=null; this._cam=null; this._built=true; }
+  _goalOpen(o,collected){ if(!o)return false;
+    if(o.type==='collect_shapes') return o.targets.every(x=>collected.includes(x));
+    if(o.type==='sequence_numbers') return (o._next||0)>=o.targets.length;
+    if(o.type==='fill_patterns') return (o._filled||0)>=o.blanks;
+    if(o.type==='echo_navigate') return true; return false; }
+  draw(state,tick){ if(!this._built)return; const T=this.T, {player,grid,collected,obj}=state;
+    const tx=player.c, tz=player.r;
+    if(!this._pp) this._pp=new T.Vector3(tx,0,tz);
+    this._pp.x+=(tx-this._pp.x)*.2; this._pp.z+=(tz-this._pp.z)*.2;
+    this.player.position.set(this._pp.x,0,this._pp.z);
+    const yaw=[Math.PI,-Math.PI/2,0,Math.PI/2][player.facing]||0;
+    let dy=yaw-this.player.rotation.y; while(dy>Math.PI)dy-=2*Math.PI; while(dy<-Math.PI)dy+=2*Math.PI; this.player.rotation.y+=dy*.2;
+    this.torch.position.set(this._pp.x,3.5,this._pp.z);
+    const fwd=[[0,0,-1],[1,0,0],[0,0,1],[-1,0,0]][player.facing]||[0,0,1];
+    const cx=this._pp.x-fwd[0]*4.6, cz=this._pp.z-fwd[2]*4.6;
+    if(!this._cam) this._cam=new T.Vector3(cx,4.3,cz);
+    this._cam.x+=(cx-this._cam.x)*.12; this._cam.z+=(cz-this._cam.z)*.12; this._cam.y=4.3;
+    this.camera.position.copy(this._cam); this.camera.lookAt(this._pp.x+fwd[0]*2,.6,this._pp.z+fwd[2]*2);
+    this.shapes.forEach(s=>{ const on=grid[s.r][s.c]===s.type; s.mesh.visible=on;
+      if(on){ s.mesh.rotation.y=tick*.03; s.mesh.position.y=s.base+(Settings.data.reduceMotion?0:Math.sin(tick*.05+s.r)*.08); } });
+    if(this.goalMesh){ this.goalMesh.rotation.z=tick*.02; this.goalMesh.material.emissiveIntensity=this._goalOpen(obj,collected)?1:.25; }
+    this.r.render(this.scene,this.camera); }
+  burst(){} ring(){}
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1241,12 +1340,15 @@ const Profile = {
 // SETTINGS (accessibility) + HAPTICS
 // ═══════════════════════════════════════════════════════════════════
 const Settings = {
-  data:{ tts:true, rate:0.94, volume:0.8, haptics:true, highContrast:false,
+  data:{ tts:true, rate:0.94, volume:0.8, haptics:true, hapticIntensity:0.8, threeD:true, highContrast:false,
     reduceMotion:(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)||false },
   load(){ try{ const s=localStorage.getItem('shapecraft_settings'); if(s) this.data={...this.data,...JSON.parse(s)}; }catch(e){} },
   save(){ try{ localStorage.setItem('shapecraft_settings',JSON.stringify(this.data)); }catch(e){} },
 };
-const Haptic = { buzz(pattern){ if(Settings.data.haptics && navigator.vibrate){ try{ navigator.vibrate(pattern); }catch(e){} } } };
+const Haptic = { buzz(pattern){ if(!(Settings.data.haptics&&navigator.vibrate))return;
+  const k=Settings.data.hapticIntensity==null?1:Settings.data.hapticIntensity;
+  const p=Array.isArray(pattern)?pattern.map((v,i)=>i%2===0?Math.round(v*k):v):Math.round(pattern*k);
+  try{ navigator.vibrate(p); }catch(e){} } };
 
 // ═══════════════════════════════════════════════════════════════════
 // GAME ENGINE
@@ -1283,6 +1385,9 @@ class GameEngine {
     this.audio.setListener(this.player.r,this.player.c,this.player.facing);
     this.audio.move(dc*.6);
     this._interact(tgt,nr,nc); this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c);
+    // wall proximity: subtle cue when the path directly ahead is blocked
+    const fa=DIR[this.player.facing], ar=this.player.r+fa.dr, ac=this.player.c+fa.dc;
+    if(ar<0||ar>=this.grid.length||ac<0||ac>=this.grid[0].length||this.grid[ar][ac]===C.WALL){ this.audio.wallNear(fa.dc*.5); Haptic.buzz(10); }
     if(this.obj.type==='echo_navigate'){ const d=this._distToGoal(); if(d<=8){ const g=this._find(C.GOAL); this.audio.echo3d(g.r,g.c); } }
   }
   _interact(cell,r,c){
@@ -1474,8 +1579,8 @@ class GameEngine {
 class App {
   constructor(){
     this.audio=new AudioEngine(); this.tts=new TTSEngine(); this.tactile=new TactileEngine();
-    this.renderer=new Renderer(document.getElementById('game-canvas'));
-    this.engine=new GameEngine(this.audio,this.tts,this.tactile,this.renderer);
+    this.renderer2d=new Renderer(document.getElementById('game-canvas')); this.renderer=this.renderer2d; this.renderer3d=null;
+    this.engine=new GameEngine(this.audio,this.tts,this.tactile,this.renderer2d);
     this.input=new InputController({
       onMove:(dr,dc)=>this.engine.move(dr,dc), onAction:()=>this.engine.action(),
       onHint:()=>this.engine.hint(), onRepeat:()=>this.tts.repeat(), onSonar:()=>this.engine.sonar(),
@@ -1488,6 +1593,21 @@ class App {
     this._buildLogo(); this._buildWorlds(); this._bindUI(); this._bindSettings(); this._i18n(); this._injectIcons(); this.refreshProfile();
     this._starfield(); this._hubDotPad();
     document.getElementById('hero-img').addEventListener('error',e=>{ e.target.style.display='none'; });
+    if(Settings.data.threeD) this._apply3D();
+  }
+  _use2D(){ this.renderer=this.renderer2d; this.engine.renderer=this.renderer2d;
+    const c2=document.getElementById('game-canvas'), c3=document.getElementById('game-canvas-3d');
+    if(c2)c2.style.display='block'; if(c3)c3.style.display='none';
+    if(this.engine.grid&&this.engine.grid.length){ this.renderer2d.resize(this.engine.grid[0].length,this.engine.grid.length); this.renderer2d.fit(); } }
+  async _apply3D(){
+    if(!Settings.data.threeD){ this._use2D(); return; }
+    try{ await loadThree();
+      if(!this.renderer3d) this.renderer3d=new Renderer3D(document.getElementById('game-canvas-3d'));
+      this.renderer=this.renderer3d; this.engine.renderer=this.renderer3d;
+      document.getElementById('game-canvas').style.display='none';
+      document.getElementById('game-canvas-3d').style.display='block';
+      if(this.engine.grid&&this.engine.grid.length){ this.renderer3d.resize(this.engine.grid[0].length,this.engine.grid.length); this.renderer3d.fit(); }
+    }catch(e){ Settings.data.threeD=false; this._use2D(); }
   }
   _injectIcons(){ document.querySelectorAll('[data-icon]').forEach(el=>{ if(el.dataset.iconDone)return;
     const s=el.dataset.iconSize?+el.dataset.iconSize:18; el.innerHTML=svgIcon(el.dataset.icon,{size:s}); el.dataset.iconDone='1'; }); }
@@ -1509,6 +1629,8 @@ class App {
     document.getElementById('set-motion').checked=Settings.data.reduceMotion;
     document.getElementById('set-rate').value=Settings.data.rate;
     document.getElementById('set-vol').value=Settings.data.volume;
+    document.getElementById('set-haptic-int').value=Settings.data.hapticIntensity;
+    document.getElementById('set-3d').checked=Settings.data.threeD;
     document.getElementById('settings-modal').classList.remove('hidden');
     document.getElementById('btn-set-close').focus();
   }
@@ -1523,6 +1645,9 @@ class App {
     document.getElementById('set-rate').addEventListener('change',()=>this.tts.speak(lang==='ko'?'말하기 속도예요.':'This is the speech rate.',true));
     document.getElementById('set-vol').addEventListener('input',e=>{Settings.data.volume=parseFloat(e.target.value);this.audio.setVolume(Settings.data.volume);Settings.save();});
     document.getElementById('set-vol').addEventListener('change',()=>this.audio.hint());
+    document.getElementById('set-haptic-int').addEventListener('input',e=>{Settings.data.hapticIntensity=parseFloat(e.target.value);Settings.save();});
+    document.getElementById('set-haptic-int').addEventListener('change',()=>Haptic.buzz([0,60]));
+    document.getElementById('set-3d').addEventListener('change',e=>{Settings.data.threeD=e.target.checked;Settings.save();this._apply3D();});
     document.getElementById('btn-set-close').addEventListener('click',()=>this._closeSettings());
     document.getElementById('settings-modal').addEventListener('click',e=>{ if(e.target.id==='settings-modal') this._closeSettings(); });
   }
