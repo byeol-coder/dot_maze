@@ -1011,18 +1011,24 @@ class TTSEngine {
 class TactileEngine {
   constructor(){ this._adapter=null; this._cv=document.getElementById('tactile-canvas'); this._ctx=this._cv?this._cv.getContext('2d'):null; }
   setAdapter(a){ this._adapter=a; }
+  // Player-centered (egocentric) view: ~7×5 cells around the player at 8×8 dots each.
+  // Solid blocks = walls, empty = corridors, plus = you, 2×2 = item, hollow box = exit.
   generate(grid,pr,pc){
-    const rows=grid.length, cols=grid[0].length;
     const m=Array.from({length:DOT_H},()=>new Uint8Array(DOT_W));
-    const sR=DOT_H/rows, sC=DOT_W/cols;
-    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
-      const cell=grid[r][c];
-      const r0=Math.floor(r*sR),r1=Math.floor((r+1)*sR),c0=Math.floor(c*sC),c1=Math.floor((c+1)*sC);
-      const pat=this._pat(cell, r===pr&&c===pc);
-      for(let dy=r0;dy<r1&&dy<DOT_H;dy++) for(let dx=c0;dx<c1&&dx<DOT_W;dx++){
-        const ly=Math.floor(((dy-r0)/Math.max(1,r1-r0))*3), lx=Math.floor(((dx-c0)/Math.max(1,c1-c0))*3);
-        m[dy][dx]=pat[ly]?(pat[ly][lx]||0):0;
-      }
+    const COLS=7, ROWS=5, CW=8, CH=8;
+    const offX=Math.floor((DOT_W-COLS*CW)/2), offY=Math.floor((DOT_H-ROWS*CH)/2);
+    const cc=Math.floor(COLS/2), cr=Math.floor(ROWS/2);
+    const cellPat=(wc,wr,pat)=>{ for(let ly=0;ly<CH;ly++)for(let lx=0;lx<CW;lx++){
+      if(!pat(lx,ly))continue; const x=offX+wc*CW+lx, y=offY+wr*CH+ly; if(y>=0&&y<DOT_H&&x>=0&&x<DOT_W) m[y][x]=1; } };
+    for(let wr=0;wr<ROWS;wr++) for(let wc=0;wc<COLS;wc++){
+      const gr=pr-cr+wr, gc=pc-cc+wc;
+      const oob=gr<0||gr>=grid.length||gc<0||gc>=grid[0].length;
+      const cell=oob?C.WALL:grid[gr][gc];
+      if(wr===cr&&wc===cc){ cellPat(wc,wr,(lx,ly)=>(lx>=3&&lx<=4&&ly>=1&&ly<=6)||(ly>=3&&ly<=4&&lx>=1&&lx<=6)); continue; } // you: plus
+      if(cell===C.WALL){ cellPat(wc,wr,()=>true); }                                                    // wall: solid
+      else if(cell===C.GOAL){ cellPat(wc,wr,(lx,ly)=>lx===1||lx===6||ly===1||ly===6); }                // exit: hollow box
+      else if(SHAPE_INFO[cell]||(cell>=C.N1&&cell<=C.N5)||cell===C.BLANK){ cellPat(wc,wr,(lx,ly)=>lx>=3&&lx<=4&&ly>=3&&ly<=4); } // item: 2×2
+      // corridor: empty
     }
     return m;
   }
@@ -1138,11 +1144,11 @@ class Renderer3D {
     const day=Settings.data.reduceMotion?0.6:(Math.sin(tick*0.004)+1)/2;
     this.amb.intensity=0.5+day*0.6; this.dir.intensity=0.32+day*0.45;
     this._skyT.copy(this._skyN).lerp(this._skyD,day); this.r.setClearColor(this._skyT,1); this.scene.fog.color.copy(this._skyT);
-    const fwd=[[0,0,-1],[1,0,0],[0,0,1],[-1,0,0]][player.facing]||[0,0,1];
-    const cx=this._pp.x-fwd[0]*4.6, cz=this._pp.z-fwd[2]*4.6;
-    if(!this._cam) this._cam=new T.Vector3(cx,4.3,cz);
-    this._cam.x+=(cx-this._cam.x)*.12; this._cam.z+=(cz-this._cam.z)*.12; this._cam.y=4.3;
-    this.camera.position.copy(this._cam); this.camera.lookAt(this._pp.x+fwd[0]*2,.6,this._pp.z+fwd[2]*2);
+    // fixed-orientation follow camera (north = away/up) so keys & tactile map match the screen
+    const cx=this._pp.x, cz=this._pp.z+5.2, cy=6.0;
+    if(!this._cam) this._cam=new T.Vector3(cx,cy,cz);
+    this._cam.x+=(cx-this._cam.x)*.18; this._cam.z+=(cz-this._cam.z)*.18;
+    this.camera.position.set(this._cam.x,cy,this._cam.z); this.camera.lookAt(this._pp.x,.4,this._pp.z-0.8);
     this.shapes.forEach(s=>{ const on=grid[s.r][s.c]===s.type; s.mesh.visible=on;
       if(on){ s.mesh.rotation.y=tick*.03; s.mesh.position.y=s.base+(Settings.data.reduceMotion?0:Math.sin(tick*.05+s.r)*.08); } });
     if(this.goalMesh){ const open=this._goalOpen(obj,collected); this.goalMesh.rotation.z=tick*.02;
