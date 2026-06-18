@@ -1013,7 +1013,13 @@ class TactileEngine {
   setAdapter(a){ this._adapter=a; }
   // Player-centered (egocentric) view: ~7×5 cells around the player at 8×8 dots each.
   // Solid blocks = walls, empty = corridors, plus = you, 2×2 = item, hollow box = exit.
-  generate(grid,pr,pc){
+  _arrowUp(lx,ly){ return ly<=3 ? (lx>=3-ly && lx<=4+ly) : (lx>=3 && lx<=4); } // filled triangle head + stem, apex up
+  _arrow(lx,ly,f){ // f: 0=N up,1=E right,2=S down,3=W left
+    if(f===1) return this._arrowUp(ly,7-lx);
+    if(f===2) return this._arrowUp(lx,7-ly);
+    if(f===3) return this._arrowUp(ly,lx);
+    return this._arrowUp(lx,ly); }
+  generate(grid,pr,pc,facing=2){
     const m=Array.from({length:DOT_H},()=>new Uint8Array(DOT_W));
     const COLS=7, ROWS=5, CW=8, CH=8;
     const offX=Math.floor((DOT_W-COLS*CW)/2), offY=Math.floor((DOT_H-ROWS*CH)/2);
@@ -1024,10 +1030,10 @@ class TactileEngine {
       const gr=pr-cr+wr, gc=pc-cc+wc;
       const oob=gr<0||gr>=grid.length||gc<0||gc>=grid[0].length;
       const cell=oob?C.WALL:grid[gr][gc];
-      if(wr===cr&&wc===cc){ cellPat(wc,wr,(lx,ly)=>(lx>=3&&lx<=4&&ly>=1&&ly<=6)||(ly>=3&&ly<=4&&lx>=1&&lx<=6)); continue; } // you: plus
+      if(wr===cr&&wc===cc){ cellPat(wc,wr,(lx,ly)=>this._arrow(lx,ly,facing)); continue; }              // you: big directional arrow
       if(cell===C.WALL){ cellPat(wc,wr,()=>true); }                                                    // wall: solid
       else if(cell===C.GOAL){ cellPat(wc,wr,(lx,ly)=>lx===1||lx===6||ly===1||ly===6); }                // exit: hollow box
-      else if(SHAPE_INFO[cell]||(cell>=C.N1&&cell<=C.N5)||cell===C.BLANK){ cellPat(wc,wr,(lx,ly)=>lx>=3&&lx<=4&&ly>=3&&ly<=4); } // item: 2×2
+      else if(SHAPE_INFO[cell]||(cell>=C.N1&&cell<=C.N5)||cell===C.BLANK){ cellPat(wc,wr,(lx,ly)=>lx>=3&&lx<=4&&ly>=3&&ly<=4); } // item: small 2×2 dot
       // corridor: empty
     }
     return m;
@@ -1050,7 +1056,7 @@ class TactileEngine {
       ctx.shadowColor='#3ad1ff'; ctx.shadowBlur=2; ctx.fill(); ctx.shadowBlur=0;
     }
   }
-  update(grid,pr,pc){ const m=this.generate(grid,pr,pc); this.render(m); if(this._adapter){try{this._adapter.send(m);}catch(e){}} }
+  update(grid,pr,pc,facing=2){ const m=this.generate(grid,pr,pc,facing); this.render(m); if(this._adapter){try{this._adapter.send(m);}catch(e){}} }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1496,12 +1502,12 @@ class GameEngine {
     if(tgt===C.GOAL){
       if(this._goalOpen()){ this.player.r=nr; this.player.c=nc; this.audio.goalOpen(); this.tts.speak(t('goalOpen')); setTimeout(()=>this._complete(),700); }
       else { this.audio.goalBlocked(); this.tts.speak(t('needMore',this._remaining()),true); }
-      this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c); return;
+      this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c,this.player.facing); return;
     }
     this.player.r=nr; this.player.c=nc;
     this.audio.setListener(this.player.r,this.player.c,this.player.facing);
     this.audio.move(dc*.6);
-    this._interact(tgt,nr,nc); this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c);
+    this._interact(tgt,nr,nc); this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c,this.player.facing);
     // wall proximity: subtle cue when the path directly ahead is blocked
     const fa=DIR[this.player.facing], ar=this.player.r+fa.dr, ac=this.player.c+fa.dc;
     if(ar<0||ar>=this.grid.length||ac<0||ac>=this.grid[0].length||this.grid[ar][ac]===C.WALL){ this.audio.wallNear(fa.dc*.5); Haptic.buzz(10); }
@@ -1548,7 +1554,7 @@ class GameEngine {
   }
   _confirmPattern(){ const ch=this._choice; this.grid[ch.r][ch.c]=ch.answer; this.obj._filled++;
     this.audio.patOk(); this.renderer.burst(ch.r,ch.c,'#5effa0'); this._dialogue(t('patOk')); this.score+=15; this._score(); this._challenge();
-    this._choice=null; this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c); }
+    this._choice=null; this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c,this.player.facing); }
   // Sonar scan — sweep N→E→S→W with directional pings + spoken report (key Q / button)
   sonar(){
     this.audio.resume(); this.tts.speak(t('sonarStart'),true); this.renderer.ring(this.player.r,this.player.c,'#3ad1ff');
@@ -1737,7 +1743,7 @@ class App {
     // route the 60×40 tactile matrix to the device while connected
     this.tactile.setAdapter(connected ? { send:(m)=>DotPad.display(m) } : null);
   }
-  _pushTactile(){ const e=this.engine; if(e&&e.grid&&e.grid.length) this.tactile.update(e.grid,e.player.r,e.player.c); else DotPad.clear(); }
+  _pushTactile(){ const e=this.engine; if(e&&e.grid&&e.grid.length) this.tactile.update(e.grid,e.player.r,e.player.c,e.player.facing); else DotPad.clear(); }
   async connectDotPad(type){
     if(!DotPad.supported()){ this._announce(lang==='ko'?'이 브라우저는 Dot Pad 연결을 지원하지 않아요. Chrome 계열에서 HTTPS로 열어 주세요.':'This browser does not support Dot Pad. Use a Chromium browser over HTTPS.'); return; }
     if(DotPad.isConnected()){ DotPad.disconnect(); this._announce(lang==='ko'?'Dot Pad 연결을 해제했어요.':'Dot Pad disconnected.'); return; }
@@ -1851,7 +1857,7 @@ class App {
     document.getElementById('game').classList.remove('hidden');
     this.input.setActive(true);
     this.engine.load(idx); this.engine.start();
-    this.tactile.update(this.engine.grid,this.engine.player.r,this.engine.player.c);
+    this.tactile.update(this.engine.grid,this.engine.player.r,this.engine.player.c,this.engine.player.facing);
     document.getElementById('canvas-wrap').focus(); this.renderer.fit();
     const w=WORLDS[idx];
     this._announce(`${lang==='ko'?w.title.ko:w.title.en}. ${lang==='ko'?w.objective.description.ko:w.objective.description.en}`);
