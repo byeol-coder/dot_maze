@@ -877,11 +877,37 @@ const nameOf = (cell)=>{const s=SHAPE_INFO[cell],n=NUMBER_INFO[cell];
 // ═══════════════════════════════════════════════════════════════════
 class AudioEngine {
   constructor(){ this._ctx=null; this._on=true; this._master=null; this._ambient=null; }
-  get ctx(){ if(!this._ctx){ this._ctx=new (window.AudioContext||window.webkitAudioContext)();
-    this._master=this._ctx.createGain(); this._master.gain.value=Settings.data.volume; this._master.connect(this._ctx.destination); }
-    return this._ctx; }
+  get ctx(){ if(!this._ctx){ const C=window.AudioContext||window.webkitAudioContext; this._ctx=new C();
+    this._master=this._ctx.createGain(); this._master.gain.value=Settings.data.volume; this._master.connect(this._ctx.destination);
+    // reverb send (per-world acoustic space)
+    try{ this._reverb=this._ctx.createConvolver(); this._reverbGain=this._ctx.createGain(); this._reverbGain.gain.value=.16;
+      this._reverb.buffer=this._makeImpulse(1.6,2.6); this._reverb.connect(this._reverbGain); this._reverbGain.connect(this._master); }catch(e){}
+  } return this._ctx; }
   resume(){ if(this._ctx&&this._ctx.state==='suspended') this._ctx.resume(); }
   setVolume(v){ this.ctx; if(this._master) this._master.gain.setTargetAtTime(v,this._ctx.currentTime,0.05); }
+  _makeImpulse(sec,decay){ const ctx=this.ctx, rate=ctx.sampleRate, len=Math.max(1,Math.floor(rate*sec));
+    const buf=ctx.createBuffer(2,len,rate);
+    for(let ch=0;ch<2;ch++){ const d=buf.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay); }
+    return buf; }
+  setReverb(idx){ this.ctx; if(!this._reverb)return; const cfg=[[1.2,3.2,.10],[1.8,2.6,.16],[3.2,1.8,.30],[2.4,2.2,.20]][idx]||[1.5,2.5,.15];
+    try{ this._reverb.buffer=this._makeImpulse(cfg[0],cfg[1]); this._reverbGain.gain.value=cfg[2]; }catch(e){} }
+  // place the 3D listener at the player, oriented by facing (0=N,1=E,2=S,3=W)
+  setListener(r,c,facing){ try{ const ctx=this.ctx, L=ctx.listener, t=ctx.currentTime;
+    const fwd=[[0,0,-1],[1,0,0],[0,0,1],[-1,0,0]][facing]||[0,0,1];
+    if(L.positionX){ L.positionX.setTargetAtTime(c,t,.02); L.positionY.value=0; L.positionZ.setTargetAtTime(r,t,.02);
+      L.forwardX.setTargetAtTime(fwd[0],t,.02); L.forwardY.value=0; L.forwardZ.setTargetAtTime(fwd[2],t,.02); L.upX.value=0; L.upY.value=1; L.upZ.value=0; }
+    else if(L.setPosition){ L.setPosition(c,0,r); L.setOrientation(fwd[0],0,fwd[2],0,1,0); }
+  }catch(e){} }
+  // 3D positioned tone (HRTF) at world cell (col=x, row=z)
+  _osc3d(freq,type,dur,wx,wz,vol=.4,atk=.01){ if(!this._on)return;
+    try{ const ctx=this.ctx,o=ctx.createOscillator(),g=ctx.createGain(),p=ctx.createPanner();
+      p.panningModel='HRTF'; p.distanceModel='inverse'; p.refDistance=1.4; p.rolloffFactor=.7; p.maxDistance=30;
+      if(p.positionX){ p.positionX.value=wx; p.positionY.value=0; p.positionZ.value=wz; } else if(p.setPosition){ p.setPosition(wx,0,wz); }
+      const t=ctx.currentTime; o.type=type; o.frequency.setValueAtTime(freq,t);
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+atk); g.gain.exponentialRampToValueAtTime(.001,t+dur);
+      o.connect(g); g.connect(p); p.connect(this._master); if(this._reverb) p.connect(this._reverb);
+      o.start(); o.stop(t+dur+.05);
+    }catch(e){} }
   _osc(freq,type,dur,pan=0,vol=.22,atk=.01){
     if(!this._on) return;
     try{ const ctx=this.ctx, o=ctx.createOscillator(), g=ctx.createGain(), p=ctx.createStereoPanner();
@@ -921,11 +947,10 @@ class AudioEngine {
   hint(pan=0){ this._osc(880,'sine',.15,pan,.16); setTimeout(()=>this._osc(1108,'sine',.15,pan,.12),120); }
   patOk(){ this._osc(659,'sine',.3,0,.2); setTimeout(()=>this._osc(784,'sine',.4,0,.22),150); Haptic.buzz([0,30,40,30]); }
   patNo(){ this._osc(220,'sawtooth',.25,0,.18); Haptic.buzz([0,50,40,50]); }
-  beacon(cell,dist,pan){ if(!this._on)return; const i=SHAPE_INFO[cell]; const f=i?i.freq*.5:330; const v=Math.max(.02,.14-dist*.02); this._osc(f,'sine',.2,pan,v,.05); }
-  echo(dist,pan){ if(!this._on)return; const v=Math.max(.05,.2-dist*.018); this._osc(330,'sine',.16,pan,v,.02); setTimeout(()=>this._osc(495,'sine',.1,pan,v*.6,.02),60); }
-  // Sonar directional ping: dir 0=N,1=E,2=S,3=W — pitch encodes N/S, pan encodes E/W
-  sonarPing(dir,dist,hit){ const pitch=dir===0?900:dir===2?320:560; const pan=dir===1?0.85:dir===3?-0.85:0;
-    const v=Math.max(.06,.22-dist*.02); this._osc(pitch,hit?'triangle':'sine',.16,pan,v,.01); Haptic.buzz(12); }
+  // 3D positioned cues (HRTF) — sound truly comes from the cell's direction & distance
+  beacon3d(cell,r,c){ if(!this._on)return; const i=SHAPE_INFO[cell]; const f=i?i.freq*.5:330; this._osc3d(f,'sine',.24,c,r,.5,.05); }
+  echo3d(r,c){ if(!this._on)return; this._osc3d(330,'sine',.18,c,r,.5,.02); setTimeout(()=>this._osc3d(495,'sine',.12,c,r,.32,.02),60); }
+  sonarPing3d(r,c,hit){ this._osc3d(hit?560:760,hit?'triangle':'sine',.18,c,r,.6,.01); Haptic.buzz(12); }
   setOn(v){ this._on=v; if(!v) this.stopAmbient(); }
   toggle(){ this._on=!this._on; if(!this._on) this.stopAmbient(); return this._on; }
 }
@@ -1239,11 +1264,12 @@ class GameEngine {
     this.renderer.resize(this.grid[0].length,this.grid.length);
     document.getElementById('game-world-name').textContent=lang==='ko'?w.title.ko:w.title.en;
     this._score(); this._hud(); this._charCard(); this._challenge(); this._scheduleBeacon();
-    this.audio.startAmbient(idx);
+    this.audio.startAmbient(idx); this.audio.setReverb(idx); this.audio.setListener(this.player.r,this.player.c,this.player.facing);
   }
   move(dr,dc){
     this.audio.resume();
     if(dr===-1)this.player.facing=0; else if(dc===1)this.player.facing=1; else if(dr===1)this.player.facing=2; else if(dc===-1)this.player.facing=3;
+    this.audio.setListener(this.player.r,this.player.c,this.player.facing);
     const nr=this.player.r+dr, nc=this.player.c+dc;
     if(nr<0||nr>=this.grid.length||nc<0||nc>=this.grid[0].length){ this.audio.wall(); this.tts.speak(t('wall'),true); return; }
     const tgt=this.grid[nr][nc];
@@ -1254,9 +1280,10 @@ class GameEngine {
       this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c); return;
     }
     this.player.r=nr; this.player.c=nc;
+    this.audio.setListener(this.player.r,this.player.c,this.player.facing);
     this.audio.move(dc*.6);
     this._interact(tgt,nr,nc); this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c);
-    if(this.obj.type==='echo_navigate'){ const d=this._distToGoal(); if(d<=8){ const g=this._find(C.GOAL); this.audio.echo(d,(g.c-this.player.c)*.18); } }
+    if(this.obj.type==='echo_navigate'){ const d=this._distToGoal(); if(d<=8){ const g=this._find(C.GOAL); this.audio.echo3d(g.r,g.c); } }
   }
   _interact(cell,r,c){
     const s=SHAPE_INFO[cell];
@@ -1311,7 +1338,7 @@ class GameEngine {
         const ss=SHAPE_INFO[cell],nn=NUMBER_INFO[cell];
         if((ss&&!this.collected.includes(cell))||nn||cell===C.GOAL||cell===C.BLANK){ dist=k; found=true; break; }
         dist=k; }
-      this.audio.sonarPing(i,dist,found);
+      this.audio.sonarPing3d(this.player.r+d.dr*dist, this.player.c+d.dc*dist, found);
     }, i*240); });
     setTimeout(()=>{ const dirs=t('dirs'); const out=[];
       DIR.forEach((d,i)=>{ let item=null,openLen=0;
@@ -1329,7 +1356,7 @@ class GameEngine {
   hint(){
     this.audio.resume(); const obj=this.obj;
     if(obj.type==='echo_navigate'){ const g=this._find(C.GOAL); const dr=g.r-this.player.r,dc=g.c-this.player.c;
-      this.audio.echo(this._distToGoal(),Math.sign(dc)*.6); this.tts.speak(t('hintMsg',t('exit'),dr,dc),true); return; }
+      this.audio.echo3d(g.r,g.c); this.tts.speak(t('hintMsg',t('exit'),dr,dc),true); return; }
     if(obj.type==='fill_patterns'){ const b=this._find(C.BLANK); if(b){ const dr=b.r-this.player.r,dc=b.c-this.player.c;
       this.audio.hint(Math.sign(dc)*.6); this.tts.speak(t('hintMsg',t('blankName'),dr,dc),true);} return; }
     let target=null;
@@ -1428,12 +1455,12 @@ class GameEngine {
   _score(){ document.getElementById('g-score').textContent=this.score; }
   _scheduleBeacon(){ if(this._beacon) clearInterval(this._beacon);
     this._beacon=setInterval(()=>{ if(!this.grid.length)return; const o=this.obj; if(!o)return;
-      if(o.type==='echo_navigate'){ const d=this._distToGoal(); if(d<=10){ const g=this._find(C.GOAL); this.audio.echo(d,(g.c-this.player.c)*.15);} return; }
+      if(o.type==='echo_navigate'){ const d=this._distToGoal(); if(d<=10){ const g=this._find(C.GOAL); this.audio.echo3d(g.r,g.c);} return; }
       const targets=o.type==='collect_shapes'?o.targets.filter(x=>!this.collected.includes(x))
         :o.type==='sequence_numbers'&&o._next<o.targets.length?[o.targets[o._next]]:[];
       let near=null,nd=99; targets.forEach(type=>{ for(let r=0;r<this.grid.length;r++) for(let c=0;c<this.grid[r].length;c++)
         if(this.grid[r][c]===type){ const dist=Math.abs(r-this.player.r)+Math.abs(c-this.player.c); if(dist<nd){nd=dist;near={type,r,c};} } });
-      if(near&&nd<=6) this.audio.beacon(near.type,nd,(near.c-this.player.c)*.18);
+      if(near&&nd<=6) this.audio.beacon3d(near.type,near.r,near.c);
     },2600); }
   start(){ const loop=()=>{ this._tick++; const w=WORLDS[this.worldIdx];
     this.renderer.draw({grid:this.grid,player:this.player,theme:w?w.theme:{},collected:this.collected,obj:this.obj},this._tick);
