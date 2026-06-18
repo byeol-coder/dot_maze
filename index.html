@@ -197,102 +197,120 @@ button{font:inherit;cursor:pointer;}
 .btn-sm:hover{background:rgba(168,85,247,.18);border-color:var(--neon);}
 #g-score{font-size:15px;font-weight:950;color:var(--gold);}
 
-#game-area{display:flex;gap:14px;padding:14px;overflow:hidden;}
-.gcard{position:relative;border:1px solid var(--card-border);border-radius:18px;background:var(--card);
-  backdrop-filter:blur(14px);padding:14px 16px;overflow:hidden;}
-.gcard::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg,transparent,var(--neon),var(--cyan),transparent);opacity:.55;}
-.gcard-lbl{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
-  margin-bottom:10px;display:flex;align-items:center;gap:7px;}
-/* RPG hero portrait */
-.char-portrait{position:relative;width:56px;height:56px;flex:0 0 auto;}
-.char-portrait .char-avatar{width:100%;height:100%;box-shadow:0 0 0 2px rgba(58,209,255,.55),0 0 18px rgba(124,58,237,.4);}
-.char-lvl-badge{position:absolute;bottom:-5px;right:-7px;min-width:23px;height:23px;padding:0 4px;border-radius:8px;
-  background:linear-gradient(135deg,#ffd54a,#ff8a3a);color:#241204;font-size:12px;font-weight:950;
-  display:flex;align-items:center;justify-content:center;border:2px solid var(--bg1);box-shadow:0 2px 8px rgba(0,0,0,.45);}
-.quest-biome{font-size:12px;font-weight:900;letter-spacing:.03em;color:var(--gold);margin-bottom:6px;}
-.quest-card #quest-desc{padding-left:10px;border-left:2px solid var(--card-border);}
+#game-area{position:absolute;inset:0;overflow:hidden;}
+#canvas-wrap{position:absolute;inset:0;overflow:hidden;background:radial-gradient(circle at 50% 45%,#0c0a22,#050310);}
 #game-canvas{display:block;position:absolute;top:50%;left:50%;transform-origin:center;image-rendering:pixelated;}
+.sr-only{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;overflow:hidden!important;}
+.ico{display:inline-block;vertical-align:middle;flex:0 0 auto;}
 
-/* ── LEFT: RPG panel ── */
-#rpg-panel{width:264px;flex:0 0 264px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;}
-.char-card{display:flex;flex-direction:column;gap:10px;}
-.char-top{display:flex;align-items:center;gap:12px;}
-.char-avatar{width:54px;height:54px;border-radius:14px;background-size:cover;background-position:center 8%;
-  border:1px solid var(--card-border);flex:0 0 auto;background-color:#1d1142;}
-.char-info{flex:1;min-width:0;}
-.char-name{font-size:16px;font-weight:900;color:#fff;}
-.char-sub{font-size:13px;color:var(--muted);display:flex;gap:12px;margin-top:2px;}
-.char-sub b{color:#fff;}
-.char-prog-bar{height:7px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;}
-.char-prog-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--neon));transition:width .4s;}
-.char-prog-text{font-size:11px;color:var(--muted);}
-#quest-desc{font-size:14px;line-height:1.5;color:var(--text);}
-.quest-steps{display:flex;flex-direction:column;gap:8px;margin-top:11px;}
-.quest-step{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text);}
-.quest-check{width:20px;height:20px;border-radius:7px;border:1.5px solid var(--card-border);display:flex;
-  align-items:center;justify-content:center;font-size:12px;flex:0 0 auto;color:var(--muted);}
-.quest-step.done .quest-check{background:rgba(94,255,160,.18);border-color:var(--green);color:var(--green);}
-.quest-step.done{color:var(--muted);}
-#inventory{display:flex;flex-wrap:wrap;gap:8px;}
-.inv-slot{width:42px;height:42px;border-radius:12px;border:1.5px dashed var(--card-border);display:flex;
-  align-items:center;justify-content:center;font-size:21px;background:var(--glass);color:#fff;transition:all .2s;}
-.inv-slot.filled{border-style:solid;border-color:var(--green);background:rgba(94,255,160,.12);}
-#tts-text{font-size:13px;line-height:1.5;border-radius:10px;padding:8px 10px;
-  background:rgba(58,209,255,.06);border:1px solid rgba(58,209,255,.16);}
+/* ── HUD shared ── */
+.hud{position:absolute;z-index:10;}
+.hud-quest,.hud-stats,.hud-dotpad,.hud-dialogue{border:1px solid var(--card-border);
+  background:rgba(12,8,32,.74);backdrop-filter:blur(16px);box-shadow:0 14px 44px rgba(0,0,0,.5);border-radius:18px;}
 
-/* ── CENTER: stage ── */
-#stage{flex:1;display:flex;flex-direction:column;gap:12px;min-width:0;}
-#canvas-wrap{flex:1;position:relative;overflow:hidden;border-radius:18px;border:1px solid var(--card-border);
-  background:#060312;min-height:0;}
-#dialogue{display:flex;align-items:center;gap:14px;flex:0 0 auto;}
-.doti{width:54px;height:54px;border-radius:14px;flex:0 0 auto;position:relative;
-  background:radial-gradient(circle at 50% 38%,#16324f,#060312);border:1px solid var(--cyan);
-  box-shadow:0 0 18px rgba(58,209,255,.4);}
-.doti::before,.doti::after{content:"";position:absolute;top:18px;width:8px;height:11px;border-radius:3px;
-  background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
-.doti::before{left:14px;}.doti::after{right:14px;}
-.doti i{position:absolute;left:50%;bottom:13px;transform:translateX(-50%);width:18px;height:6px;
-  border-radius:0 0 9px 9px;background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
-.dialogue-body{flex:1;min-width:0;}
-.dialogue-speaker{font-size:12px;font-weight:900;color:var(--cyan);}
-#dialogue-text{font-size:16px;line-height:1.5;color:#fff;margin-top:3px;}
-#dialogue.pulse .doti{animation:dotiPop .5s ease;}
-@keyframes dotiPop{0%{transform:scale(.85);}50%{transform:scale(1.1);}100%{transform:scale(1);}}
+/* quest bar (top-left) */
+.hud-quest{top:16px;left:16px;display:flex;align-items:center;gap:12px;padding:9px 14px;max-width:min(58vw,660px);}
+.hud-back{width:38px;height:38px;border-radius:11px;border:1px solid var(--card-border);background:var(--glass);
+  color:#fff;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.hud-back:hover{background:rgba(168,85,247,.22);}
+.hud-quest-icon{width:42px;height:42px;border-radius:11px;background:rgba(168,85,247,.18);color:var(--neon);
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.hud-quest-body{min-width:0;}
+.hud-quest-title{font-size:18px;font-weight:950;color:#fff;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hud-quest-obj{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-top:1px;}
+.ico-diamond{color:var(--gold);display:inline-flex;}.ico-diamond .ico{width:13px;height:13px;}
+.hud-chips{display:flex;align-items:center;gap:7px;margin-left:6px;flex:0 0 auto;}
+.qchip{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 9px;border-radius:10px;
+  border:1px solid var(--card-border);background:rgba(255,255,255,.05);font-size:13px;font-weight:800;color:#fff;}
+.qchip.done{border-color:var(--good);background:rgba(94,255,160,.14);}
 
-/* ── RIGHT: BIG Dot Pad ── */
-#dotpad-stage{width:356px;flex:0 0 356px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;}
-.dotpad-big-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.dotpad-big-title{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:900;color:#fff;}
+/* stats (top-right) */
+.hud-stats{top:16px;right:16px;display:flex;align-items:center;gap:14px;padding:9px 12px 9px 16px;}
+.hud-stat-star{display:flex;align-items:center;gap:7px;font-size:19px;font-weight:950;color:#fff;}
+.hud-stat-star .ico{color:var(--gold);}
+.hud-xp{display:flex;flex-direction:column;gap:3px;min-width:96px;}
+.hud-xp-label{font-size:12px;color:var(--muted);font-weight:800;}.hud-xp-label b{color:#fff;}
+.hud-xp-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden;}
+.hud-xp-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--neon));transition:width .4s;}
+.hud-btns{display:flex;gap:6px;border-left:1px solid var(--card-border);padding-left:12px;}
+.hud-icon-btn{height:38px;min-width:38px;padding:0 9px;border-radius:11px;border:1px solid var(--card-border);
+  background:var(--glass);color:#fff;display:flex;align-items:center;justify-content:center;gap:5px;}
+.hud-icon-btn:hover{background:rgba(168,85,247,.22);}
+.hud-lang{font-size:13px;font-weight:800;}
+
+/* ── RIGHT: Dot Pad ── */
+.hud-dotpad{top:50%;right:16px;transform:translateY(-50%);width:340px;padding:16px;display:flex;flex-direction:column;gap:13px;}
+.dotpad-big-head{display:flex;align-items:center;justify-content:space-between;}
+.dotpad-big-title{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:900;color:#fff;}
 .dotpad-conn{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--green);}
 .dotpad-conn::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);}
 #tactile-canvas{display:block;width:100%;height:auto;aspect-ratio:3/2;border-radius:14px;
   border:1px solid rgba(58,209,255,.28);background:#060312;box-shadow:inset 0 0 30px rgba(0,0,0,.5);}
-.dotpad-meta{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted);margin-top:14px;}
-.dotpad-meta b{color:#fff;font-size:18px;}
-#hud-nearby{display:grid;gap:6px;margin-top:10px;}
-.nearby-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;
-  border:1px solid var(--card-border);background:var(--glass);font-size:13px;}
-.nearby-dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;}
-
-/* Dot Pad panning keys (large) */
-.panning{display:flex;flex-direction:column;align-items:center;gap:10px;}
-.panning-lbl{font-size:11px;color:var(--cyan);font-weight:800;letter-spacing:.06em;text-transform:uppercase;}
-.panning-keys{display:grid;grid-template-columns:repeat(3,60px);grid-template-rows:repeat(3,60px);gap:8px;}
-.pan-btn{border-radius:14px;border:1px solid var(--card-border);background:var(--glass);color:#fff;
-  font-size:24px;display:flex;align-items:center;justify-content:center;
-  -webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;transition:background .1s,transform .1s;}
+.dotpad-legend{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap;}
+.dotpad-legend .lg{display:flex;align-items:center;gap:6px;}
+.lg-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:0 0 auto;}
+.lg-pos{margin-left:auto;}.lg-pos b{color:#fff;}
+.panning-keys{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:7px;justify-content:center;}
+.pan-btn{border-radius:13px;border:1px solid var(--card-border);background:var(--glass);color:#fff;font-size:22px;
+  display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;transition:background .1s,transform .1s;}
 .pan-btn:active{background:rgba(58,209,255,.3);transform:scale(.92);}
 .pan-up{grid-column:2;grid-row:1;}.pan-left{grid-column:1;grid-row:2;}
-.pan-act{grid-column:2;grid-row:2;background:rgba(168,85,247,.22);}.pan-right{grid-column:3;grid-row:2;}
-.pan-down{grid-column:2;grid-row:3;}
+.pan-act{grid-column:2;grid-row:2;background:rgba(168,85,247,.22);}.pan-right{grid-column:3;grid-row:2;}.pan-down{grid-column:2;grid-row:3;}
+.btn-scan{width:100%;height:44px;border-radius:13px;border:1px solid rgba(58,209,255,.4);
+  background:linear-gradient(135deg,rgba(58,209,255,.25),rgba(168,85,247,.2));color:#fff;font-size:14px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s,box-shadow .15s;}
+.btn-scan:hover,.btn-scan:focus-visible{transform:translateY(-1px);box-shadow:0 0 22px rgba(58,209,255,.35);outline:none;}
 
-@media (max-width:1120px){ #rpg-panel{display:none;} }
-@media (max-width:980px){
-  #game-area{flex-direction:column;overflow-y:auto;padding:10px;}
-  #dotpad-stage{width:100%;flex:0 0 auto;}
-  #stage{min-height:auto;}
-  #canvas-wrap{min-height:340px;height:340px;flex:0 0 auto;}
+/* ── dialogue (bottom-center) ── */
+.hud-dialogue{bottom:70px;left:50%;transform:translateX(-50%);width:min(640px,64vw);display:flex;align-items:center;gap:14px;padding:12px 18px;}
+.doti{width:48px;height:48px;border-radius:13px;flex:0 0 auto;position:relative;
+  background:radial-gradient(circle at 50% 38%,#16324f,#060312);border:1px solid var(--cyan);box-shadow:0 0 18px rgba(58,209,255,.4);}
+.doti::before,.doti::after{content:"";position:absolute;top:16px;width:7px;height:10px;border-radius:3px;background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+.doti::before{left:13px;}.doti::after{right:13px;}
+.doti i{position:absolute;left:50%;bottom:11px;transform:translateX(-50%);width:16px;height:5px;border-radius:0 0 8px 8px;background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+.hud-wave{display:flex;align-items:center;gap:3px;height:26px;flex:0 0 auto;}
+.hud-wave i{width:3px;height:6px;border-radius:2px;background:var(--cyan);opacity:.5;}
+.hud-dialogue.speaking .hud-wave i{opacity:1;animation:wave .9s ease-in-out infinite;}
+.hud-wave i:nth-child(2){animation-delay:.08s}.hud-wave i:nth-child(3){animation-delay:.16s}.hud-wave i:nth-child(4){animation-delay:.24s}.hud-wave i:nth-child(5){animation-delay:.32s}.hud-wave i:nth-child(6){animation-delay:.4s}.hud-wave i:nth-child(7){animation-delay:.48s}
+@keyframes wave{0%,100%{height:6px}50%{height:22px}}
+.dialogue-body{flex:1;min-width:0;}
+.dialogue-speaker{font-size:12px;font-weight:900;color:var(--cyan);}
+#dialogue-text{font-size:16px;line-height:1.45;color:#fff;margin-top:2px;}
+#dialogue.pulse{animation:dotiPop .5s ease;}
+@keyframes dotiPop{0%{transform:translateX(-50%) scale(.97);}50%{transform:translateX(-50%) scale(1.02);}100%{transform:translateX(-50%) scale(1);}}
+
+/* ── status (bottom-left) ── */
+.hud-status{bottom:18px;left:18px;display:flex;gap:10px;}
+.status-toggle{display:flex;align-items:center;gap:7px;height:38px;padding:0 14px;border-radius:99px;
+  border:1px solid var(--card-border);background:rgba(12,8,32,.74);backdrop-filter:blur(12px);color:var(--good);font-size:13px;font-weight:800;}
+.status-toggle[aria-pressed="false"]{color:var(--muted);}
+
+/* ── control hints (bottom-center) ── */
+.hud-controls{bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:18px;
+  background:rgba(12,8,32,.62);backdrop-filter:blur(10px);border:1px solid var(--card-border);border-radius:12px;padding:7px 16px;
+  font-size:13px;color:var(--muted);font-weight:700;}
+.ctl{display:flex;align-items:center;gap:6px;}
+.ctl kbd{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 5px;border-radius:6px;
+  background:rgba(255,255,255,.12);border:1px solid var(--card-border);font-size:11px;font-weight:800;color:#fff;}
+
+/* ── responsive ── */
+@media (max-width:1120px){ .hud-dotpad{width:300px;} .hud-quest{max-width:60vw;} }
+@media (max-width:920px){
+  .hud-controls{display:none;} .hud-quest-title{font-size:16px;}
+  .hud-dotpad{width:240px;padding:11px;gap:9px;}
+  .panning-keys{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);}
+  .hud-chips .qchip-txt{display:none;}
+}
+@media (max-width:820px){
+  #game-area{position:absolute;inset:0;display:flex;flex-direction:column;overflow-y:auto;gap:10px;padding:10px;}
+  .hud{position:static;transform:none!important;}
+  #canvas-wrap{position:relative;inset:auto;height:300px;flex:0 0 auto;border-radius:16px;border:1px solid var(--card-border);}
+  .hud-quest,.hud-stats,.hud-dotpad,.hud-dialogue,.hud-status{width:auto;max-width:none;}
+  .hud-quest{order:1;flex-wrap:wrap;} .hud-stats{order:2;justify-content:space-between;} #canvas-wrap{order:3;}
+  .hud-dialogue{order:4;} .hud-dotpad{order:5;} .hud-status{order:6;}
+  .hud-quest-title{white-space:normal;}
+  .hud-chips{flex-basis:100%;margin-left:0;flex-wrap:wrap;}
+  .panning-keys{grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);}
 }
 
 /* ═══════════════ MODALS ═══════════════ */
@@ -394,9 +412,9 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
         <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
         <div class="xp-text" id="xp-text">0 / 100 XP</div>
       </div>
-      <div class="player-stat"><span class="ic">⭐</span><span class="val" id="stat-stars">0</span><span class="lbl" data-i="stars">Stars</span></div>
-      <div class="player-stat"><span class="ic">🛡️</span><span class="val" id="stat-badges">0</span><span class="lbl" data-i="badges">Badges</span></div>
-      <button class="icon-btn" id="btn-settings" aria-label="설정">⚙️</button>
+      <div class="player-stat"><span class="ic" data-icon="star" data-icon-size="22"></span><span class="val" id="stat-stars">0</span><span class="lbl" data-i="stars">Stars</span></div>
+      <div class="player-stat"><span class="ic" data-icon="shield" data-icon-size="22"></span><span class="val" id="stat-badges">0</span><span class="lbl" data-i="badges">Badges</span></div>
+      <button class="icon-btn" id="btn-settings" aria-label="설정" data-icon="gear"></button>
     </div>
   </header>
 
@@ -404,11 +422,11 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
   <div class="hub-stage">
     <!-- mission -->
     <div class="mission-card">
-      <div class="mission-head"><span>🚩</span><span data-i="mission">Today's Mission</span></div>
+      <div class="mission-head"><span data-icon="flag"></span><span data-i="mission">Today's Mission</span></div>
       <div class="mission-text" id="mission-text">삼각형 열쇠를 찾아 문을 여세요.</div>
       <div class="mission-reward">
-        <div class="r"><span class="l" data-i="reward">Reward</span><span class="v">⭐ 25 <span data-i="stars2">Stars</span></span></div>
-        <div class="mission-chest">🎁</div>
+        <div class="r"><span class="l" data-i="reward">Reward</span><span class="v"><span data-icon="star" data-icon-size="15"></span> 25 <span data-i="stars2">Stars</span></span></div>
+        <div class="mission-chest" data-icon="gift" data-icon-size="28"></div>
       </div>
     </div>
 
@@ -426,7 +444,7 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
     <!-- dot pad -->
     <div class="dotpad-panel">
       <div class="dotpad-head">
-        <div class="dotpad-title"><span>📟</span> Dot Pad</div>
+        <div class="dotpad-title"><span data-icon="pad"></span> Dot Pad</div>
         <div class="dotpad-status" id="dotpad-status">Connected</div>
       </div>
       <canvas id="hub-dotpad-canvas" width="256" height="130" aria-hidden="true"></canvas>
@@ -434,110 +452,107 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
 
     <!-- actions -->
     <div class="hub-actions">
-      <button class="btn-start" id="btn-start"><span class="play">▶</span><span data-i="start">Start Adventure</span></button>
+      <button class="btn-start" id="btn-start"><span class="play" data-icon="play" data-icon-size="22"></span><span data-i="start">Start Adventure</span></button>
       <div class="hub-sub-actions">
-        <button class="btn-sub" id="btn-continue"><span class="ic">↺</span> <span data-i="continue">Continue</span></button>
-        <button class="btn-sub" id="btn-worldselect"><span class="ic">🌐</span> <span data-i="worldselect">World Select</span></button>
+        <button class="btn-sub" id="btn-continue"><span class="ic" data-icon="refresh"></span> <span data-i="continue">Continue</span></button>
+        <button class="btn-sub" id="btn-worldselect"><span class="ic" data-icon="globe"></span> <span data-i="worldselect">World Select</span></button>
       </div>
     </div>
   </div>
 
   <!-- worlds -->
   <div class="hub-worlds">
-    <div class="worlds-label"><span class="globe">🌐</span><span class="txt" data-i="worlds">Worlds</span></div>
+    <div class="worlds-label"><span class="globe" data-icon="globe" data-icon-size="28"></span><span class="txt" data-i="worlds">Worlds</span></div>
     <div class="worlds-track" id="worlds-track"></div>
     <button class="worlds-next" id="worlds-next" aria-label="더 보기">›</button>
   </div>
 </main>
 
-<!-- ═══════════════ GAME ═══════════════ -->
+<!-- ═══════════════ GAME (immersive overlay HUD) ═══════════════ -->
 <section id="game" class="hidden" role="application" aria-label="ShapeCraft 게임 플레이">
-  <header id="game-top">
-    <div class="g-left">
-      <button class="btn-back" id="btn-back">‹ <span data-i="hub">메인</span></button>
-      <span id="game-world-name">Shape Forest</span>
-    </div>
-    <div class="g-right">
-      <span id="g-score">⭐ 0</span>
-      <button class="btn-sm" id="btn-lang" aria-label="언어 전환">🌐 KO</button>
-      <button class="btn-sm" id="btn-tts" aria-label="음성 안내 켜기/끄기">🔊 TTS</button>
-      <button class="btn-sm" id="btn-hint" aria-label="힌트">💡 <span data-i="hint">힌트</span></button>
-    </div>
-  </header>
-
   <div id="game-area">
-    <!-- LEFT: RPG panel -->
-    <aside id="rpg-panel" aria-label="모험 정보">
-      <div class="gcard char-card">
-        <div class="char-top">
-          <div class="char-portrait">
-            <div class="char-avatar" id="char-avatar"></div>
-            <span class="char-lvl-badge" id="char-lvl-badge">1</span>
-          </div>
-          <div class="char-info">
-            <div class="char-name">Dot Explorer</div>
-            <div class="char-sub"><span>Lv <b id="char-level">1</b></span><span>⭐ <b id="char-stars">0</b></span></div>
-          </div>
-        </div>
-        <div class="char-prog-bar"><div class="char-prog-fill" id="char-prog-fill" style="width:0%"></div></div>
-        <div class="char-prog-text" id="char-prog-text">월드 진행 0%</div>
-      </div>
-      <div class="gcard quest-card">
-        <div class="gcard-lbl">📜 <span data-i="quest">퀘스트</span></div>
-        <div class="quest-biome" id="quest-biome">—</div>
-        <div id="quest-desc">—</div>
-        <div class="quest-steps" id="quest-steps"></div>
-      </div>
-      <div class="gcard">
-        <div class="gcard-lbl">🎒 <span data-i="inventory">인벤토리</span></div>
-        <div id="inventory"></div>
-      </div>
-      <div class="gcard">
-        <div class="gcard-lbl">💬 <span data-i="lastmsg">마지막 안내</span></div>
-        <div id="tts-text" aria-live="polite">—</div>
-      </div>
-    </aside>
+    <!-- full-bleed dungeon -->
+    <div id="canvas-wrap" tabindex="0" role="img" aria-label="게임 화면" aria-describedby="a11y-live">
+      <canvas id="game-canvas"></canvas>
+    </div>
 
-    <!-- CENTER: stage -->
-    <div id="stage">
-      <div id="canvas-wrap" tabindex="0" role="img" aria-label="게임 화면" aria-describedby="a11y-live">
-        <canvas id="game-canvas"></canvas>
+    <!-- TOP-LEFT: quest bar -->
+    <div class="hud hud-quest" role="group" aria-label="퀘스트">
+      <button class="hud-back" id="btn-back" aria-label="메인으로"><span data-icon="back"></span></button>
+      <div class="hud-quest-icon" data-icon="flag" aria-hidden="true"></div>
+      <div class="hud-quest-body">
+        <div class="hud-quest-title" id="game-world-name">Shape Forest</div>
+        <div class="hud-quest-obj"><span data-icon="diamond" class="ico-diamond"></span><span id="quest-desc">—</span></div>
       </div>
-      <div id="dialogue" class="gcard">
-        <div class="doti" aria-hidden="true"><i></i></div>
-        <div class="dialogue-body">
-          <div class="dialogue-speaker" id="dialogue-speaker" data-i="doti">도티</div>
-          <div id="dialogue-text">—</div>
-        </div>
+      <div class="hud-chips" id="quest-steps" aria-label="진행 상황"></div>
+    </div>
+
+    <!-- TOP-RIGHT: stats + buttons -->
+    <div class="hud hud-stats">
+      <div class="hud-stat-star"><span data-icon="star"></span><b id="g-score">0</b></div>
+      <div class="hud-xp">
+        <div class="hud-xp-label">Lv <b id="char-level">1</b> · <span id="char-prog-text">0%</span></div>
+        <div class="hud-xp-bar"><div class="hud-xp-fill" id="char-prog-fill" style="width:0%"></div></div>
+      </div>
+      <div class="hud-btns">
+        <button class="hud-icon-btn" id="btn-hint" aria-label="힌트"><span data-icon="bulb"></span></button>
+        <button class="hud-icon-btn" id="btn-lang" aria-label="언어 전환"><span data-icon="globe"></span><span class="hud-lang" id="lang-code">KO</span></button>
+        <button class="hud-icon-btn" id="btn-settings" aria-label="설정"><span data-icon="gear"></span></button>
       </div>
     </div>
 
-    <!-- RIGHT: BIG Dot Pad -->
-    <aside id="dotpad-stage" aria-label="Dot Pad">
-      <div class="gcard">
-        <div class="dotpad-big-head">
-          <div class="dotpad-big-title">📟 Dot Pad</div>
-          <div class="dotpad-conn">Connected</div>
-        </div>
-        <canvas id="tactile-canvas" width="480" height="320" aria-hidden="true"></canvas>
-        <div class="dotpad-meta">
-          <span data-i="position">현재 위치</span>
-          <span><b id="hud-pos">—</b> · <span id="hud-facing">—</span></span>
-        </div>
-        <div id="hud-nearby" aria-live="polite"></div>
+    <!-- RIGHT: Dot Pad -->
+    <aside class="hud hud-dotpad" aria-label="Dot Pad">
+      <div class="dotpad-big-head">
+        <div class="dotpad-big-title"><span data-icon="pad"></span> Dot Pad</div>
+        <div class="dotpad-conn">Connected</div>
       </div>
-      <div class="gcard panning">
-        <div class="panning-lbl" data-i="panning">Dot Pad 패닝키</div>
-        <div class="panning-keys" aria-label="방향 패닝키">
-          <button class="pan-btn pan-up" id="pan-up" aria-label="위로 이동">↑</button>
-          <button class="pan-btn pan-left" id="pan-left" aria-label="왼쪽 이동">←</button>
-          <button class="pan-btn pan-act" id="pan-act" aria-label="읽기">●</button>
-          <button class="pan-btn pan-right" id="pan-right" aria-label="오른쪽 이동">→</button>
-          <button class="pan-btn pan-down" id="pan-down" aria-label="아래로 이동">↓</button>
-        </div>
-        <button class="btn-scan" id="btn-scan" aria-label="주변 스캔 (Q)"><span aria-hidden="true">🔊</span> <span data-i="scan">주변 스캔</span></button>
+      <canvas id="tactile-canvas" width="480" height="320" aria-hidden="true"></canvas>
+      <div class="dotpad-legend">
+        <span class="lg"><i class="lg-dot" style="background:#a855f7"></i> <span data-i="lg_you">나</span></span>
+        <span class="lg"><i class="lg-dot" style="background:#5effa0"></i> <span data-i="lg_target">목표</span></span>
+        <span class="lg lg-pos"><b id="hud-pos">—</b> · <span id="hud-facing">—</span></span>
       </div>
+      <div class="panning-keys" aria-label="방향 패닝키">
+        <button class="pan-btn pan-up" id="pan-up" aria-label="위로 이동">↑</button>
+        <button class="pan-btn pan-left" id="pan-left" aria-label="왼쪽 이동">←</button>
+        <button class="pan-btn pan-act" id="pan-act" aria-label="읽기">●</button>
+        <button class="pan-btn pan-right" id="pan-right" aria-label="오른쪽 이동">→</button>
+        <button class="pan-btn pan-down" id="pan-down" aria-label="아래로 이동">↓</button>
+      </div>
+      <button class="btn-scan" id="btn-scan" aria-label="주변 스캔 (Q)"><span data-icon="radar"></span> <span data-i="scan">주변 스캔</span></button>
     </aside>
+
+    <!-- BOTTOM-CENTER: dialogue bar -->
+    <div class="hud hud-dialogue" id="dialogue">
+      <div class="doti" aria-hidden="true"><i></i></div>
+      <div class="hud-wave" id="hud-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="dialogue-body">
+        <div class="dialogue-speaker" id="dialogue-speaker" data-i="doti">도티</div>
+        <div id="dialogue-text">—</div>
+      </div>
+    </div>
+
+    <!-- BOTTOM-LEFT: status -->
+    <div class="hud hud-status">
+      <button class="status-toggle" id="btn-tts" aria-pressed="true" aria-label="음성 안내 켜기 끄기">
+        <span data-icon="sound" id="tts-ico"></span> <span id="tts-label" data-i="voiceOn">음성 켜짐</span></button>
+    </div>
+
+    <!-- BOTTOM-CENTER: control hints -->
+    <div class="hud hud-controls" aria-hidden="true">
+      <span class="ctl"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <span data-i="ctl_move">이동</span></span>
+      <span class="ctl"><kbd>Q</kbd> <span data-i="ctl_scan">스캔</span></span>
+      <span class="ctl"><kbd>Space</kbd> <span data-i="ctl_act">상호작용</span></span>
+    </div>
+
+    <!-- screen-reader-only mirrors (kept for engine + a11y) -->
+    <div id="inventory" class="sr-only"></div>
+    <div id="tts-text" class="sr-only" aria-live="polite">—</div>
+    <div id="hud-nearby" class="sr-only" aria-live="polite"></div>
+    <span id="char-stars" class="sr-only">0</span>
+    <span id="char-lvl-badge" class="sr-only">1</span>
+    <span id="char-avatar" class="sr-only"></span>
   </div>
 </section>
 
@@ -562,7 +577,7 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
 <!-- success modal -->
 <div class="overlay hidden" id="success-modal" role="dialog" aria-modal="true" aria-labelledby="success-title">
   <div class="modal">
-    <div id="success-stars">⭐⭐⭐</div>
+    <div id="success-stars" aria-hidden="true"></div>
     <div class="modal-kicker" data-i="clear">World Clear!</div>
     <h2 class="modal-title" id="success-title-text">—</h2>
     <p class="modal-body" id="success-body">—</p>
@@ -587,7 +602,7 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
 <!-- settings modal (accessibility) -->
 <div class="overlay hidden" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="set-title">
   <div class="modal">
-    <div class="modal-kicker">⚙️</div>
+    <div class="modal-kicker" data-icon="gear" data-icon-size="22"></div>
     <h2 class="modal-title" id="set-title" data-i="settings">설정</h2>
     <div class="set-list">
       <label class="set-row"><span data-i="set_tts">음성 안내</span>
@@ -759,6 +774,41 @@ const STORY = {
 };
 
 // ═══════════════════════════════════════════════════════════════════
+// 2D FLAT ICONS (inline SVG, currentColor) — replaces emoji
+// ═══════════════════════════════════════════════════════════════════
+const ICONS = {
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/>',
+  sound:'<path fill="currentColor" stroke="none" d="M4 9.5h3L11 6v12l-4-3.5H4z"/><path d="M14.5 9a4 4 0 0 1 0 6M17 7a7 7 0 0 1 0 10"/>',
+  mute:'<path fill="currentColor" stroke="none" d="M4 9.5h3L11 6v12l-4-3.5H4z"/><path d="M15 9.5l5 5M20 9.5l-5 5"/>',
+  bulb:'<path d="M9.5 18h5M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5.9 1.3 1 2.1h5c.1-.8.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1"/>',
+  pad:'<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><g fill="currentColor" stroke="none"><circle cx="8" cy="9.5" r="1"/><circle cx="12" cy="9.5" r="1"/><circle cx="16" cy="9.5" r="1"/><circle cx="8" cy="14" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="16" cy="14" r="1"/></g>',
+  flag:'<path d="M6 21V3"/><path fill="currentColor" stroke="none" d="M6 4h11l-2.2 3.5L17 11H6z"/>',
+  gift:'<rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M3.5 13h17M12 9v11"/><path d="M12 9C7 9 6 5.8 8 5.2 10.5 4.5 12 9 12 9zM12 9c0 0 1.5-4.5 4-3.8C18 5.8 17 9 12 9z"/>',
+  scroll:'<rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 9h6M9 12.5h6M9 16h4"/>',
+  bag:'<path d="M6.5 8.5h11l.8 11H5.7z"/><path d="M9 8.5a3 3 0 0 1 6 0"/>',
+  chat:'<path d="M20 11.5a7.5 7.5 0 0 1-10.8 6.7L4.5 19.5l1.3-4A7.5 7.5 0 1 1 20 11.5z"/>',
+  star:'<path fill="currentColor" stroke="none" d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.6 1-5.8-4.3-4.1 5.9-.9z"/>',
+  shield:'<path fill="currentColor" stroke="none" d="M12 3l8 3v5.5c0 4.7-3.3 7.8-8 9-4.7-1.2-8-4.3-8-9V6z"/>',
+  lock:'<rect x="5" y="10.5" width="14" height="9.5" rx="2" fill="currentColor" stroke="none"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+  play:'<path fill="currentColor" stroke="none" d="M8 5.5v13l11-6.5z"/>',
+  refresh:'<path d="M19 12a7 7 0 1 1-2-4.9"/><path d="M20 4v4h-4"/>',
+  radar:'<circle cx="12" cy="12" r="9"/><path d="M12 12a5 5 0 0 1 5-5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
+  back:'<path d="M14 5l-7 7 7 7"/>',
+  door:'<rect x="6" y="3.5" width="12" height="17" rx="1.5"/><circle cx="14.5" cy="12" r="1" fill="currentColor" stroke="none"/>',
+  diamond:'<path fill="currentColor" stroke="none" d="M12 4l8 8-8 8-8-8z"/>',
+  triangle:'<path fill="currentColor" stroke="none" d="M12 4.5l7.5 14H4.5z"/>',
+  square:'<rect x="5.5" y="5.5" width="13" height="13" rx="1.5" fill="currentColor" stroke="none"/>',
+  circle:'<circle cx="12" cy="12" r="7.5" fill="currentColor" stroke="none"/>',
+  hexagon:'<path fill="currentColor" stroke="none" d="M12 3.5l7.4 4.3v8.4L12 20.5 4.6 16.2V7.8z"/>',
+  starShape:'<path fill="currentColor" stroke="none" d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.8l6.1-.9z"/>',
+};
+function svgIcon(name,opts={}){ const b=ICONS[name]; if(!b) return '';
+  const s=opts.size||18; const style=opts.color?` style="color:${opts.color}"`:'';
+  return `<svg class="ico" viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${opts.sw||2}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"${style}>${b}</svg>`; }
+const SHAPE_ICON = { [C.TRIANGLE]:'triangle', [C.SQUARE]:'square', [C.CIRCLE]:'circle', [C.HEXAGON]:'hexagon', [C.STAR]:'starShape' };
+
+// ═══════════════════════════════════════════════════════════════════
 // I18N
 // ═══════════════════════════════════════════════════════════════════
 let lang = 'ko';
@@ -774,6 +824,8 @@ const T = {
     sonarWall:'벽', sonarOpen:'열린 길', steps:'칸',
     set_tts:'음성 안내', set_rate:'말하기 속도', set_vol:'소리 크기', set_haptic:'진동',
     set_contrast:'고대비 화면', set_motion:'모션 줄이기', set_close:'닫기',
+    lg_you:'나', lg_target:'목표', voiceOn:'음성 켜짐', voiceOff:'음성 꺼짐',
+    ctl_move:'이동', ctl_scan:'스캔', ctl_act:'상호작용', toHubMsg:'메인 화면으로 돌아왔어요.',
     next:'다음 월드', replay:'다시 하기', tohub:'메인으로', selectworld:'월드 선택', close:'닫기',
     locked:'잠김', wall:'벽이에요!', goalOpen:'출구예요! 들어가세요!',
     needMore:(n)=>`아직 ${n}개 더 남았어요!`,
@@ -799,6 +851,8 @@ const T = {
     sonarWall:'wall', sonarOpen:'open path', steps:'steps',
     set_tts:'Voice guide', set_rate:'Speech rate', set_vol:'Volume', set_haptic:'Vibration',
     set_contrast:'High contrast', set_motion:'Reduce motion', set_close:'Close',
+    lg_you:'You', lg_target:'Target', voiceOn:'Voice On', voiceOff:'Voice Off',
+    ctl_move:'Move', ctl_scan:'Scan', ctl_act:'Interact', toHubMsg:'Back to the main screen.',
     next:'Next World', replay:'Retry', tohub:'Home', selectworld:'Select World', close:'Close',
     locked:'Locked', wall:'Wall!', goalOpen:'Exit! Go through!',
     needMore:(n)=>`${n} more to go!`,
@@ -1018,7 +1072,7 @@ class Renderer {
       if(open&&!Settings.data.reduceMotion){ ctx.save(); ctx.translate(x+cs/2,y+cs/2); ctx.rotate(tick*.02);
         ctx.strokeStyle=`rgba(94,255,160,${.3+pulse*.3})`; ctx.lineWidth=2;
         for(let i=0;i<6;i++){ ctx.rotate(Math.PI/3); ctx.beginPath(); ctx.moveTo(0,cs*.22); ctx.lineTo(0,cs*.46); ctx.stroke(); } ctx.restore(); }
-      this._txt(ctx,open?'🚪':'🔒',x+cs/2,y+cs/2,cs*.5); return; }
+      this._drawGate(ctx,x+cs/2,y+cs/2,cs,open); return; }
     if(cell===C.START){ ctx.fillStyle='rgba(58,209,255,.07)'; ctx.fillRect(x,y,cs,cs); return; }
     const s=SHAPE_INFO[cell];
     if(s){ if(!collected.includes(cell)){
@@ -1088,6 +1142,14 @@ class Renderer {
   }
   _txt(ctx,text,x,y,size){ ctx.font=`${size}px ui-sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillStyle='rgba(200,220,255,.7)'; ctx.fillText(text,x,y); }
+  _drawGate(ctx,cx,cy,cs,open){
+    ctx.save(); ctx.translate(cx,cy); const col=open?'#5effa0':'#9aa6c8';
+    ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=2.4; ctx.lineJoin='round'; ctx.lineCap='round';
+    if(open){ const w=cs*.32,h=cs*.5; ctx.strokeRect(-w/2,-h/2,w,h);
+      ctx.beginPath(); ctx.arc(w/2-3,0,1.8,0,7); ctx.fill(); }
+    else { ctx.beginPath(); ctx.arc(0,-cs*.1,cs*.11,Math.PI,0); ctx.stroke();
+      const bw=cs*.32,bh=cs*.26; ctx.globalAlpha=.85; ctx.fillRect(-bw/2,-cs*.02,bw,bh); ctx.globalAlpha=1; }
+    ctx.restore(); }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1298,7 +1360,7 @@ class GameEngine {
     const sm=document.getElementById('success-modal');
     document.getElementById('success-title-text').textContent=lang==='ko'?w.title.ko:w.title.en;
     document.getElementById('success-body').textContent=lang==='ko'?w.success.ko:w.success.en;
-    document.getElementById('success-stars').textContent='⭐⭐⭐';
+    document.getElementById('success-stars').innerHTML=svgIcon('star',{size:38,color:'#ffd54a'}).repeat(3);
     document.getElementById('btn-next').style.display=(this.worldIdx+1<WORLDS.length)?'':'none';
     sm.classList.remove('hidden'); document.getElementById('btn-next').focus();
     if(this._beacon) clearInterval(this._beacon);
@@ -1306,21 +1368,23 @@ class GameEngine {
   }
   _hud(){
     const dirs=t('dirs');
-    document.getElementById('hud-pos').textContent=`R${this.player.r} · C${this.player.c}`;
-    document.getElementById('hud-facing').textContent=t('facing',dirs[this.player.facing]);
-    const nb=document.getElementById('hud-nearby'); nb.innerHTML='';
-    DIR.forEach(d=>{ const nr=this.player.r+d.dr,nc=this.player.c+d.dc;
-      if(nr<0||nr>=this.grid.length||nc<0||nc>=this.grid[0].length)return; const cell=this.grid[nr][nc];
-      if(cell===C.EMPTY||cell===C.START||cell===C.WALL)return;
-      const s=SHAPE_INFO[cell],n=NUMBER_INFO[cell]; if(!s&&!n&&cell!==C.GOAL&&cell!==C.BLANK)return;
-      const color=s?s.color:'#a855f7'; const item=document.createElement('div'); item.className='nearby-item';
-      item.innerHTML=`<span class="nearby-dot" style="background:${color}"></span><span>${d.arrow} ${nameOf(cell)}</span>`;
-      nb.appendChild(item); });
+    document.getElementById('hud-pos').textContent=`R${this.player.r}·C${this.player.c}`;
+    document.getElementById('hud-facing').textContent=dirs[this.player.facing];
+    const nb=document.getElementById('hud-nearby');
+    if(nb){ const msgs=[];
+      DIR.forEach((d,i)=>{ const nr=this.player.r+d.dr,nc=this.player.c+d.dc;
+        if(nr<0||nr>=this.grid.length||nc<0||nc>=this.grid[0].length)return; const cell=this.grid[nr][nc];
+        const s=SHAPE_INFO[cell],n=NUMBER_INFO[cell]; if(!s&&!n&&cell!==C.GOAL&&cell!==C.BLANK)return;
+        msgs.push(`${dirs[i]} ${nameOf(cell)}`); });
+      nb.textContent=msgs.join(', '); }
+    const cw=document.getElementById('canvas-wrap');
+    if(cw) cw.setAttribute('aria-label',`${document.getElementById('game-world-name').textContent}, R${this.player.r} C${this.player.c}, ${dirs[this.player.facing]}`);
   }
   _dialogue(text){
     const el=document.getElementById('dialogue-text'); if(el) el.textContent=text;
     const sp=document.getElementById('dialogue-speaker'); if(sp) sp.textContent=t('doti');
-    const box=document.getElementById('dialogue'); if(box){ box.classList.remove('pulse'); void box.offsetWidth; box.classList.add('pulse'); }
+    const box=document.getElementById('dialogue'); if(box){ box.classList.remove('pulse'); void box.offsetWidth; box.classList.add('pulse');
+      box.classList.add('speaking'); clearTimeout(this._speakT); this._speakT=setTimeout(()=>box.classList.remove('speaking'),Math.max(1200,text.length*90)); }
     this.tts.speak(text,true);
   }
   _charCard(){
@@ -1338,19 +1402,18 @@ class GameEngine {
     else if(o.type==='echo_navigate'){ total=1; done=this._goalOpen()&&this.grid[this.player.r][this.player.c]===C.GOAL?1:0; }
     const p=Math.round(done/total*100);
     const f=document.getElementById('char-prog-fill'); if(f) f.style.width=p+'%';
-    const tx=document.getElementById('char-prog-text'); if(tx) tx.textContent=t('worldProg',p);
+    const tx=document.getElementById('char-prog-text'); if(tx) tx.textContent=p+'%';
   }
   _challenge(){
     const o=this.obj; const w=WORLDS[this.worldIdx];
     const biome=document.getElementById('quest-biome'); if(biome&&w) biome.textContent=`${w.kicker} · ${lang==='ko'?w.title.ko:w.title.en}`;
     document.getElementById('quest-desc').textContent=lang==='ko'?o.description.ko:o.description.en;
-    const steps=document.getElementById('quest-steps'); steps.innerHTML='';
-    const add=(label,done)=>{ const d=document.createElement('div'); d.className='quest-step'+(done?' done':'');
-      d.innerHTML=`<span class="quest-check">${done?'✓':''}</span><span>${label}</span>`; steps.appendChild(d); };
-    if(o.type==='collect_shapes') o.targets.forEach(tp=>add(`${SHAPE_INFO[tp].emoji} ${nameOf(tp)} ${t('meet')}`, this.collected.includes(tp)));
-    else if(o.type==='sequence_numbers') o.targets.forEach((tp,i)=>add(`${NUMBER_INFO[tp].num} ${t('step')}`, i<(o._next||0)));
-    else if(o.type==='fill_patterns'){ for(let i=0;i<o.blanks;i++) add(`${t('blankN')} ${i+1}`, i<(o._filled||0)); }
-    else if(o.type==='echo_navigate') add(`🚪 ${t('findExit')}`, false);
+    const chips=document.getElementById('quest-steps'); chips.innerHTML='';
+    const chip=(inner,done)=>{ const d=document.createElement('div'); d.className='qchip'+(done?' done':''); d.innerHTML=inner; chips.appendChild(d); };
+    if(o.type==='collect_shapes') o.targets.forEach(tp=>chip(`${svgIcon(SHAPE_ICON[tp],{size:15,color:SHAPE_INFO[tp].color})}<span class="qchip-txt">${this.collected.includes(tp)?'1/1':'0/1'}</span>`, this.collected.includes(tp)));
+    else if(o.type==='sequence_numbers') o.targets.forEach((tp,i)=>chip(`<span>${NUMBER_INFO[tp].num}</span>`, i<(o._next||0)));
+    else if(o.type==='fill_patterns'){ for(let i=0;i<o.blanks;i++) chip(`${svgIcon('square',{size:15,color:'#ffc84a'})}`, i<(o._filled||0)); }
+    else if(o.type==='echo_navigate') chip(`${svgIcon('door',{size:15,color:'#5effa0'})}`,false);
     this._inventory(); this._charProgress();
   }
   _inventory(){
@@ -1362,7 +1425,7 @@ class GameEngine {
     else if(o.type==='fill_patterns'){ for(let i=0;i<o.blanks;i++) slot(i<(o._filled||0)?'■':'',i<(o._filled||0)); }
     else if(o.type==='echo_navigate') slot('🔦',true);
   }
-  _score(){ document.getElementById('g-score').textContent=`⭐ ${this.score}`; }
+  _score(){ document.getElementById('g-score').textContent=this.score; }
   _scheduleBeacon(){ if(this._beacon) clearInterval(this._beacon);
     this._beacon=setInterval(()=>{ if(!this.grid.length)return; const o=this.obj; if(!o)return;
       if(o.type==='echo_navigate'){ const d=this._distToGoal(); if(d<=10){ const g=this._find(C.GOAL); this.audio.echo(d,(g.c-this.player.c)*.15);} return; }
@@ -1395,15 +1458,22 @@ class App {
   }
   init(){
     Profile.load(); Settings.load(); this._applySettings();
-    this._buildLogo(); this._buildWorlds(); this._bindUI(); this._bindSettings(); this._i18n(); this.refreshProfile();
+    this._buildLogo(); this._buildWorlds(); this._bindUI(); this._bindSettings(); this._i18n(); this._injectIcons(); this.refreshProfile();
     this._starfield(); this._hubDotPad();
     document.getElementById('hero-img').addEventListener('error',e=>{ e.target.style.display='none'; });
   }
+  _injectIcons(){ document.querySelectorAll('[data-icon]').forEach(el=>{ if(el.dataset.iconDone)return;
+    const s=el.dataset.iconSize?+el.dataset.iconSize:18; el.innerHTML=svgIcon(el.dataset.icon,{size:s}); el.dataset.iconDone='1'; }); }
+  _announce(text){ const live=document.getElementById('a11y-live'); if(live) live.textContent=text; }
+  _reflectTTS(on){ const b=document.getElementById('btn-tts'); if(!b)return;
+    b.setAttribute('aria-pressed',on?'true':'false');
+    const ico=document.getElementById('tts-ico'); if(ico) ico.innerHTML=svgIcon(on?'sound':'mute',{size:18});
+    const lbl=document.getElementById('tts-label'); if(lbl) lbl.textContent=on?t('voiceOn'):t('voiceOff'); }
   _applySettings(){
     document.body.classList.toggle('hc',Settings.data.highContrast);
     document.body.classList.toggle('rm',Settings.data.reduceMotion);
     this.tts._on=Settings.data.tts; this.audio.setVolume(Settings.data.volume);
-    const b=document.getElementById('btn-tts'); if(b) b.textContent=Settings.data.tts?'🔊 TTS':'🔇 TTS';
+    this._reflectTTS(Settings.data.tts);
   }
   _openSettings(){
     document.getElementById('set-tts').checked=Settings.data.tts;
@@ -1458,7 +1528,7 @@ class App {
         <div class="world-overlay"></div>
         <div class="world-num" style="background:${w.theme.accent}33;color:#fff">${w.id}</div>
         <div class="world-info"><div class="world-name">${lang==='ko'?w.title.ko:w.title.en}</div>
-        <div class="world-stars">${unlocked?`⭐ ${earned} / ${w.max}`:`🔒 ${t('locked')}`}</div></div>`;
+        <div class="world-stars">${unlocked?`${svgIcon('star',{size:14,color:'#ffc84a'})} ${earned} / ${w.max}`:`${svgIcon('lock',{size:14})} ${t('locked')}`}</div></div>`;
       if(unlocked) card.addEventListener('click',()=>this._openIntro(i));
       track.appendChild(card);
       // world-select grid
@@ -1474,7 +1544,8 @@ class App {
     (w.legend||[]).forEach(it=>{ const s=SHAPE_INFO[it.t],n=NUMBER_INFO[it.t];
       const div=document.createElement('div'); div.className='legend-item';
       const ic=document.createElement('div'); ic.className='legend-icon';
-      ic.style.background=(s?s.color:'#a855f7')+'22'; ic.textContent=s?s.emoji:n?n.emoji:(it.t===C.GOAL?'🚪':'?');
+      ic.style.background=(s?s.color:'#a855f7')+'22';
+      ic.innerHTML=s?svgIcon(SHAPE_ICON[it.t],{size:20,color:s.color}):n?`<b style="color:#a855f7">${n.num}</b>`:it.t===C.GOAL?svgIcon('door',{size:20,color:'#5effa0'}):'?';
       const sp=document.createElement('span');
       sp.textContent=s?(lang==='ko'?`${s.ko.name}: ${s.ko.desc}`:`${s.en.name}: ${s.en.desc}`)
         :n?(lang==='ko'?`숫자 ${n.num}`:`Number ${n.num}`)
@@ -1492,14 +1563,16 @@ class App {
     this.engine.load(idx); this.engine.start();
     this.tactile.update(this.engine.grid,this.engine.player.r,this.engine.player.c);
     document.getElementById('canvas-wrap').focus(); this.renderer.fit();
-    const w=WORLDS[idx]; setTimeout(()=>this.engine._dialogue(lang==='ko'?STORY[w.id].intro.ko:STORY[w.id].intro.en),450);
+    const w=WORLDS[idx];
+    this._announce(`${lang==='ko'?w.title.ko:w.title.en}. ${lang==='ko'?w.objective.description.ko:w.objective.description.en}`);
+    setTimeout(()=>this.engine._dialogue(lang==='ko'?STORY[w.id].intro.ko:STORY[w.id].intro.en),450);
   }
   _toHub(){
     this.input.setActive(false); this.engine.stop(); speechSynthesis.cancel();
     document.getElementById('game').classList.add('hidden');
     document.getElementById('success-modal').classList.add('hidden');
     document.getElementById('hub').classList.remove('hidden');
-    this.refreshProfile();
+    this.refreshProfile(); this._announce(t('toHubMsg'));
   }
   _closeWS(){ document.getElementById('ws-modal').classList.add('hidden'); }
   _bindUI(){
@@ -1517,11 +1590,11 @@ class App {
     document.getElementById('btn-replay').addEventListener('click',()=>{
       document.getElementById('success-modal').classList.add('hidden'); this._startWorld(this._worldIdx); });
     document.getElementById('btn-lang').addEventListener('click',()=>{
-      lang=lang==='ko'?'en':'ko'; document.getElementById('btn-lang').textContent=`🌐 ${lang.toUpperCase()}`;
-      document.documentElement.lang=lang; this._i18n(); this._buildWorlds(); this.engine._challenge(); this.engine._hud();
+      lang=lang==='ko'?'en':'ko'; const lc=document.getElementById('lang-code'); if(lc) lc.textContent=lang.toUpperCase();
+      document.documentElement.lang=lang; this._i18n(); this._reflectTTS(Settings.data.tts); this._buildWorlds(); this.engine._challenge(); this.engine._hud();
     });
     document.getElementById('btn-tts').addEventListener('click',()=>{ const on=this.tts.toggle();
-      document.getElementById('btn-tts').textContent=on?'🔊 TTS':'🔇 TTS'; });
+      Settings.data.tts=on; Settings.save(); this._reflectTTS(on); });
     document.getElementById('btn-hint').addEventListener('click',()=>this.engine.hint());
     document.getElementById('btn-settings').addEventListener('click',()=>this._openSettings());
     const scanBtn=document.getElementById('btn-scan'); if(scanBtn) scanBtn.addEventListener('click',()=>this.engine.sonar());
@@ -1539,6 +1612,10 @@ class App {
       if(Math.abs(dx)>Math.abs(dy)) this.input.pan(dx>0?'right':'left'); else this.input.pan(dy>0?'down':'up'); },{passive:true});
     // overlay click-to-close for ws
     document.getElementById('ws-modal').addEventListener('click',e=>{ if(e.target.id==='ws-modal') this._closeWS(); });
+    // Escape closes settings / world-select
+    window.addEventListener('keydown',e=>{ if(e.key==='Escape'){
+      if(!document.getElementById('settings-modal').classList.contains('hidden')) this._closeSettings();
+      else if(!document.getElementById('ws-modal').classList.contains('hidden')) this._closeWS(); } });
     window.addEventListener('resize',()=>this.renderer.fit());
   }
   _i18n(){ document.querySelectorAll('[data-i]').forEach(el=>{ const k=el.dataset.i; const v=t(k); if(typeof v==='string') el.textContent=v; });
