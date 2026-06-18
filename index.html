@@ -511,7 +511,7 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
       <div class="hud-btns">
         <button class="hud-icon-btn" id="btn-hint" aria-label="힌트"><span data-icon="bulb"></span></button>
         <button class="hud-icon-btn" id="btn-lang" aria-label="언어 전환"><span data-icon="globe"></span><span class="hud-lang" id="lang-code">KO</span></button>
-        <button class="hud-icon-btn" id="btn-settings" aria-label="설정"><span data-icon="gear"></span></button>
+        <button class="hud-icon-btn" id="btn-settings-game" aria-label="설정"><span data-icon="gear"></span></button>
       </div>
     </div>
 
@@ -768,9 +768,9 @@ const WORLDS = [
       [1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1],
       [1,4,0,6,0,4,0,23,1,4,0,6,0,4,0,23,1],
       [1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1],
-      [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
       [1,1,1,0,1,1,1,1,1,1,1,1,0,1,1,1,1],
-      [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
       [1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1],
       [1,6,0,4,0,6,0,23,1,6,0,4,0,6,0,23,1],
       [1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1],
@@ -1668,8 +1668,7 @@ class GameEngine {
     const tx=document.getElementById('char-prog-text'); if(tx) tx.textContent=p+'%';
   }
   _challenge(){
-    const o=this.obj; const w=WORLDS[this.worldIdx];
-    const biome=document.getElementById('quest-biome'); if(biome&&w) biome.textContent=`${w.kicker} · ${lang==='ko'?w.title.ko:w.title.en}`;
+    const o=this.obj;
     document.getElementById('quest-desc').textContent=lang==='ko'?o.description.ko:o.description.en;
     const chips=document.getElementById('quest-steps'); chips.innerHTML='';
     const chip=(inner,done)=>{ const d=document.createElement('div'); d.className='qchip'+(done?' done':''); d.innerHTML=inner; chips.appendChild(d); };
@@ -1900,7 +1899,7 @@ class App {
     document.getElementById('btn-tts').addEventListener('click',()=>{ const on=this.tts.toggle();
       Settings.data.tts=on; Settings.save(); this._reflectTTS(on); });
     document.getElementById('btn-hint').addEventListener('click',()=>this.engine.hint());
-    document.getElementById('btn-settings').addEventListener('click',()=>this._openSettings());
+    ['btn-settings','btn-settings-game'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('click',()=>this._openSettings()); });
     const scanBtn=document.getElementById('btn-scan'); if(scanBtn) scanBtn.addEventListener('click',()=>this.engine.sonar());
     // Dot Pad connect (status badges + settings buttons)
     ['dotpad-status','dotpad-conn'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('click',()=>this.connectDotPad('ble')); });
