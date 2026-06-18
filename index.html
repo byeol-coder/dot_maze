@@ -198,9 +198,20 @@ button{font:inherit;cursor:pointer;}
 #g-score{font-size:15px;font-weight:950;color:var(--gold);}
 
 #game-area{display:flex;gap:14px;padding:14px;overflow:hidden;}
-.gcard{border:1px solid var(--card-border);border-radius:18px;background:var(--card);backdrop-filter:blur(14px);padding:14px 16px;}
+.gcard{position:relative;border:1px solid var(--card-border);border-radius:18px;background:var(--card);
+  backdrop-filter:blur(14px);padding:14px 16px;overflow:hidden;}
+.gcard::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,var(--neon),var(--cyan),transparent);opacity:.55;}
 .gcard-lbl{font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
   margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+/* RPG hero portrait */
+.char-portrait{position:relative;width:56px;height:56px;flex:0 0 auto;}
+.char-portrait .char-avatar{width:100%;height:100%;box-shadow:0 0 0 2px rgba(58,209,255,.55),0 0 18px rgba(124,58,237,.4);}
+.char-lvl-badge{position:absolute;bottom:-5px;right:-7px;min-width:23px;height:23px;padding:0 4px;border-radius:8px;
+  background:linear-gradient(135deg,#ffd54a,#ff8a3a);color:#241204;font-size:12px;font-weight:950;
+  display:flex;align-items:center;justify-content:center;border:2px solid var(--bg1);box-shadow:0 2px 8px rgba(0,0,0,.45);}
+.quest-biome{font-size:12px;font-weight:900;letter-spacing:.03em;color:var(--gold);margin-bottom:6px;}
+.quest-card #quest-desc{padding-left:10px;border-left:2px solid var(--card-border);}
 #game-canvas{display:block;position:absolute;top:50%;left:50%;transform-origin:center;image-rendering:pixelated;}
 
 /* ── LEFT: RPG panel ── */
@@ -459,7 +470,10 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
     <aside id="rpg-panel" aria-label="모험 정보">
       <div class="gcard char-card">
         <div class="char-top">
-          <div class="char-avatar" id="char-avatar"></div>
+          <div class="char-portrait">
+            <div class="char-avatar" id="char-avatar"></div>
+            <span class="char-lvl-badge" id="char-lvl-badge">1</span>
+          </div>
           <div class="char-info">
             <div class="char-name">Dot Explorer</div>
             <div class="char-sub"><span>Lv <b id="char-level">1</b></span><span>⭐ <b id="char-stars">0</b></span></div>
@@ -468,8 +482,9 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
         <div class="char-prog-bar"><div class="char-prog-fill" id="char-prog-fill" style="width:0%"></div></div>
         <div class="char-prog-text" id="char-prog-text">월드 진행 0%</div>
       </div>
-      <div class="gcard">
+      <div class="gcard quest-card">
         <div class="gcard-lbl">📜 <span data-i="quest">퀘스트</span></div>
+        <div class="quest-biome" id="quest-biome">—</div>
         <div id="quest-desc">—</div>
         <div class="quest-steps" id="quest-steps"></div>
       </div>
@@ -931,7 +946,7 @@ class TactileEngine {
 class Renderer {
   constructor(canvas){ this.canvas=canvas; this.ctx=canvas.getContext('2d'); this.cell=CELL_SIZE; this._tick=0;
     this.fx=[]; this.trail=[]; this._lastPR=-1; this._lastPC=-1; }
-  resize(cols,rows){ this.canvas.width=cols*this.cell; this.canvas.height=rows*this.cell; this.fx=[]; this.trail=[]; this._lastPR=-1; this.fit(); }
+  resize(cols,rows){ this.canvas.width=cols*this.cell; this.canvas.height=rows*this.cell; this.fx=[]; this.trail=[]; this._lastPR=-1; this.motes=null; this.fit(); }
   burst(r,c,color){ if(Settings.data.reduceMotion) return; const cs=this.cell, cx=c*cs+cs/2, cy=r*cs+cs/2;
     for(let i=0;i<18;i++){ const a=Math.PI*2*i/18+Math.random(), sp=1+Math.random()*3.6;
       this.fx.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,color:color||'#fff',size:2+Math.random()*3}); } }
@@ -958,24 +973,51 @@ class Renderer {
     ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
     for(let r=0;r<grid.length;r++) for(let c=0;c<grid[r].length;c++)
       this._cell(ctx,grid[r][c],c*cs,r*cs,cs,theme,collected,obj,tick,r,c);
+    this._atmosphere(ctx,player,theme,tick);
     if(!Settings.data.reduceMotion) this._trailFx(ctx,player,cs);
     this._voxel(ctx,player.c*cs+cs/2,player.r*cs+cs/2,cs,player.facing,tick);
     this._fx(ctx);
   }
+  _initMotes(){ const W=this.canvas.width,H=this.canvas.height;
+    this.motes=Array.from({length:20},()=>({x:Math.random()*W,y:Math.random()*H,
+      vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3-.05,s:1+Math.random()*2,ph:Math.random()*6})); }
+  _atmosphere(ctx,player,theme,tick){
+    const cs=this.cell, W=this.canvas.width, H=this.canvas.height, hc=Settings.data.highContrast;
+    // torch / depth vignette centered on the explorer
+    if(!hc){ const px=player.c*cs+cs/2, py=player.r*cs+cs/2; const dark=theme.dark?0.92:0.5;
+      const g=ctx.createRadialGradient(px,py,cs*1.1,px,py,Math.max(W,H)*(theme.dark?0.42:0.92));
+      g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,`rgba(2,2,10,${dark})`);
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H); }
+    // floating ambient motes (fireflies/dust) in the world's accent colour
+    if(!Settings.data.reduceMotion){ if(!this.motes||!this.motes.length) this._initMotes();
+      const col=theme.accent||'#3ad1ff'; ctx.save();
+      this.motes.forEach(m=>{ m.x+=m.vx; m.y+=m.vy; if(m.x<0)m.x+=W; if(m.x>W)m.x-=W; if(m.y<0)m.y+=H; if(m.y>H)m.y-=H;
+        ctx.globalAlpha=Math.max(0,.22+Math.sin(tick*.04+m.ph)*.2); ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=8;
+        ctx.beginPath(); ctx.arc(m.x,m.y,m.s,0,7); ctx.fill(); });
+      ctx.globalAlpha=1; ctx.shadowBlur=0; ctx.restore(); }
+  }
   _cell(ctx,cell,x,y,cs,theme,collected,obj,tick,r,c){
     const pulse=(Math.sin(tick*.04)+1)/2; const hc=Settings.data.highContrast;
-    if(cell===C.WALL){ ctx.fillStyle=hc?'#6f7fb5':(theme.wall||'#1a2548'); ctx.fillRect(x,y,cs,cs);
-      ctx.strokeStyle=hc?'rgba(255,255,255,.55)':'rgba(255,255,255,.04)'; ctx.lineWidth=hc?2:1;
+    if(cell===C.WALL){ const base=hc?'#6f7fb5':(theme.wall||'#1a2548');
+      ctx.fillStyle=base; ctx.fillRect(x,y,cs,cs);
+      // pseudo-3D block: top highlight + side/bottom shadow (dungeon depth)
+      ctx.fillStyle='rgba(255,255,255,'+(hc?.22:.13)+')'; ctx.fillRect(x,y,cs,cs*.2);
+      ctx.fillStyle='rgba(255,255,255,.05)'; ctx.fillRect(x,y,cs*.14,cs);
+      ctx.fillStyle='rgba(0,0,0,.34)'; ctx.fillRect(x,y+cs*.8,cs,cs*.2); ctx.fillRect(x+cs*.86,y,cs*.14,cs);
+      ctx.strokeStyle=hc?'rgba(255,255,255,.55)':'rgba(0,0,0,.42)'; ctx.lineWidth=hc?2:1;
       ctx.strokeRect(x+.5,y+.5,cs-1,cs-1); ctx.lineWidth=1; return; }
     ctx.fillStyle=hc?'#020308':(theme.path||'#0a1020'); ctx.fillRect(x,y,cs,cs);
-    if(theme.dark&&!hc){ // echo cave: dim non-adjacent cells
-      ctx.fillStyle='rgba(8,5,24,0.55)'; ctx.fillRect(x,y,cs,cs);
-    }
+    if(!hc){ ctx.fillStyle=((r+c)%2)?'rgba(255,255,255,.02)':'rgba(0,0,0,.12)'; ctx.fillRect(x,y,cs,cs);
+      ctx.strokeStyle='rgba(255,255,255,.03)'; ctx.strokeRect(x+.5,y+.5,cs-1,cs-1); }
+    if(theme.dark&&!hc){ ctx.fillStyle='rgba(8,5,24,0.5)'; ctx.fillRect(x,y,cs,cs); }
     if(cell===C.GOAL){ const open=this._goalOpen(collected,obj);
       const rad=ctx.createRadialGradient(x+cs/2,y+cs/2,2,x+cs/2,y+cs/2,cs*.6);
       const col=open?'94,255,160':'120,120,140';
       rad.addColorStop(0,`rgba(${col},${open?.4+pulse*.3:.2})`); rad.addColorStop(1,`rgba(${col},0)`);
       ctx.fillStyle=rad; ctx.fillRect(x,y,cs,cs);
+      if(open&&!Settings.data.reduceMotion){ ctx.save(); ctx.translate(x+cs/2,y+cs/2); ctx.rotate(tick*.02);
+        ctx.strokeStyle=`rgba(94,255,160,${.3+pulse*.3})`; ctx.lineWidth=2;
+        for(let i=0;i<6;i++){ ctx.rotate(Math.PI/3); ctx.beginPath(); ctx.moveTo(0,cs*.22); ctx.lineTo(0,cs*.46); ctx.stroke(); } ctx.restore(); }
       this._txt(ctx,open?'🚪':'🔒',x+cs/2,y+cs/2,cs*.5); return; }
     if(cell===C.START){ ctx.fillStyle='rgba(58,209,255,.07)'; ctx.fillRect(x,y,cs,cs); return; }
     const s=SHAPE_INFO[cell];
@@ -1283,6 +1325,7 @@ class GameEngine {
   }
   _charCard(){
     document.getElementById('char-level').textContent=Profile.level();
+    const badge=document.getElementById('char-lvl-badge'); if(badge) badge.textContent=Profile.level();
     document.getElementById('char-stars').textContent=Profile.data.stars;
     document.getElementById('char-avatar').style.backgroundImage="url('./maze_character.png')";
     this._charProgress();
@@ -1298,7 +1341,8 @@ class GameEngine {
     const tx=document.getElementById('char-prog-text'); if(tx) tx.textContent=t('worldProg',p);
   }
   _challenge(){
-    const o=this.obj;
+    const o=this.obj; const w=WORLDS[this.worldIdx];
+    const biome=document.getElementById('quest-biome'); if(biome&&w) biome.textContent=`${w.kicker} · ${lang==='ko'?w.title.ko:w.title.en}`;
     document.getElementById('quest-desc').textContent=lang==='ko'?o.description.ko:o.description.en;
     const steps=document.getElementById('quest-steps'); steps.innerHTML='';
     const add=(label,done)=>{ const d=document.createElement('div'); d.className='quest-step'+(done?' done':'');
