@@ -103,8 +103,11 @@ button{font:inherit;cursor:pointer;}
   box-shadow:0 12px 40px rgba(0,0,0,.4);z-index:7;}
 .dotpad-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .dotpad-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:900;color:#fff;}
-.dotpad-status{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--green);}
-.dotpad-status::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);}
+.dotpad-status{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--cyan);
+  background:none;border:0;cursor:pointer;padding:2px 4px;border-radius:7px;}
+.dotpad-status::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+.dotpad-status:hover{background:rgba(255,255,255,.06);}
+.dotpad-status.on{color:var(--green);}.dotpad-status.on::before{background:var(--green);box-shadow:0 0 8px var(--green);}
 #hub-dotpad-canvas{display:block;width:100%;height:130px;border-radius:12px;background:#060312;
   border:1px solid var(--card-border);}
 
@@ -243,8 +246,11 @@ button{font:inherit;cursor:pointer;}
 .hud-dotpad{top:50%;right:16px;transform:translateY(-50%);width:340px;padding:16px;display:flex;flex-direction:column;gap:13px;}
 .dotpad-big-head{display:flex;align-items:center;justify-content:space-between;}
 .dotpad-big-title{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:900;color:#fff;}
-.dotpad-conn{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--green);}
-.dotpad-conn::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);}
+.dotpad-conn{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--cyan);
+  background:none;border:0;cursor:pointer;padding:2px 4px;border-radius:7px;}
+.dotpad-conn::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+.dotpad-conn:hover{background:rgba(255,255,255,.06);}
+.dotpad-conn.on{color:var(--green);}.dotpad-conn.on::before{background:var(--green);box-shadow:0 0 8px var(--green);}
 #tactile-canvas{display:block;width:100%;height:auto;aspect-ratio:3/2;border-radius:14px;
   border:1px solid rgba(58,209,255,.28);background:#060312;box-shadow:inset 0 0 30px rgba(0,0,0,.5);}
 .dotpad-legend{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap;}
@@ -355,6 +361,10 @@ button{font:inherit;cursor:pointer;}
 .set-switch:checked{background:linear-gradient(90deg,var(--cyan),var(--neon));}
 .set-switch:checked::after{transform:translateX(22px);}
 .set-range{flex:0 0 150px;accent-color:var(--neon);height:28px;cursor:pointer;}
+.set-dp{display:flex;align-items:center;gap:8px;}
+.set-dp-btn{height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--card-border);background:var(--glass);color:var(--text);font-size:13px;font-weight:800;}
+.set-dp-btn:hover{background:rgba(168,85,247,.2);border-color:var(--neon);}
+.set-dp-stat{font-size:12px;color:var(--muted);min-width:64px;text-align:right;}
 
 /* Dot Pad scan button */
 .btn-scan{margin-top:12px;width:100%;height:46px;border-radius:14px;border:1px solid rgba(58,209,255,.4);
@@ -448,7 +458,7 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
     <div class="dotpad-panel">
       <div class="dotpad-head">
         <div class="dotpad-title"><span data-icon="pad"></span> Dot Pad</div>
-        <div class="dotpad-status" id="dotpad-status">Connected</div>
+        <button class="dotpad-status" id="dotpad-status" aria-label="Dot Pad 기기 연결">Connect</button>
       </div>
       <canvas id="hub-dotpad-canvas" width="256" height="130" aria-hidden="true"></canvas>
     </div>
@@ -509,7 +519,7 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
     <aside class="hud hud-dotpad" aria-label="Dot Pad">
       <div class="dotpad-big-head">
         <div class="dotpad-big-title"><span data-icon="pad"></span> Dot Pad</div>
-        <div class="dotpad-conn">Connected</div>
+        <button class="dotpad-conn" id="dotpad-conn" aria-label="Dot Pad 기기 연결">Connect</button>
       </div>
       <canvas id="tactile-canvas" width="480" height="320" aria-hidden="true"></canvas>
       <div class="dotpad-legend">
@@ -617,6 +627,8 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
         <input type="range" id="set-haptic-int" min="0" max="1" step="0.05" class="set-range"></label>
       <label class="set-row"><span data-i="set_3d">3D 입체 화면</span>
         <input type="checkbox" id="set-3d" class="set-switch"></label>
+      <div class="set-row"><span data-i="set_dotpad">Dot Pad 기기</span>
+        <span class="set-dp"><button class="set-dp-btn" id="set-dp-ble">BLE</button><button class="set-dp-btn" id="set-dp-usb">USB</button><span class="set-dp-stat" id="set-dp-status">—</span></span></div>
       <label class="set-row"><span data-i="set_contrast">고대비 화면</span>
         <input type="checkbox" id="set-contrast" class="set-switch"></label>
       <label class="set-row"><span data-i="set_motion">모션 줄이기</span>
@@ -834,7 +846,7 @@ const T = {
     set_contrast:'고대비 화면', set_motion:'모션 줄이기', set_close:'닫기',
     lg_you:'나', lg_target:'목표', voiceOn:'음성 켜짐', voiceOff:'음성 꺼짐',
     ctl_move:'이동', ctl_scan:'스캔', ctl_act:'상호작용', toHubMsg:'메인 화면으로 돌아왔어요.',
-    set_haptic_int:'진동 세기', set_3d:'3D 입체 화면',
+    set_haptic_int:'진동 세기', set_3d:'3D 입체 화면', set_dotpad:'Dot Pad 기기',
     next:'다음 월드', replay:'다시 하기', tohub:'메인으로', selectworld:'월드 선택', close:'닫기',
     locked:'잠김', wall:'벽이에요!', goalOpen:'출구예요! 들어가세요!',
     needMore:(n)=>`아직 ${n}개 더 남았어요!`,
@@ -862,7 +874,7 @@ const T = {
     set_contrast:'High contrast', set_motion:'Reduce motion', set_close:'Close',
     lg_you:'You', lg_target:'Target', voiceOn:'Voice On', voiceOff:'Voice Off',
     ctl_move:'Move', ctl_scan:'Scan', ctl_act:'Interact', toHubMsg:'Back to the main screen.',
-    set_haptic_int:'Vibration strength', set_3d:'3D view',
+    set_haptic_int:'Vibration strength', set_3d:'3D view', set_dotpad:'Dot Pad device',
     next:'Next World', replay:'Retry', tohub:'Home', selectworld:'Select World', close:'Close',
     locked:'Locked', wall:'Wall!', goalOpen:'Exit! Go through!',
     needMore:(n)=>`${n} more to go!`,
@@ -1399,6 +1411,57 @@ const Haptic = { buzz(pattern){ if(!(Settings.data.haptics&&navigator.vibrate))r
   try{ navigator.vibrate(p); }catch(e){} } };
 
 // ═══════════════════════════════════════════════════════════════════
+// REAL DOT PAD DEVICE (DotPadSDK 3.0.0) — BLE/USB connect, key input, graphic output
+// ═══════════════════════════════════════════════════════════════════
+// Graphic-mode bit order per cell (2 cols × 4 rows), derived from the SDK's
+// braille→graphic transform. BIT[col][row] = byte weight for that dot.
+const DOTPAD_BIT=[[0x80,0x08,0x40,0x02],[0x20,0x10,0x04,0x01]];
+function matrixToDotPadHex(matrix, device){
+  const cols=(device&&device.numberCellColumns)||30, rows=(device&&device.numberCellRows)||10;
+  const W=cols*2, H=rows*4, srcH=matrix.length, srcW=matrix[0].length;
+  let hex='';
+  for(let cr=0;cr<rows;cr++) for(let cc=0;cc<cols;cc++){ let b=0;
+    for(let dx=0;dx<2;dx++) for(let dy=0;dy<4;dy++){
+      const x=cc*2+dx, y=cr*4+dy, sx=Math.floor(x*srcW/W), sy=Math.floor(y*srcH/H);
+      if(matrix[sy]&&matrix[sy][sx]) b|=DOTPAD_BIT[dx][dy]; }
+    hex+=b.toString(16).padStart(2,'0'); }
+  return hex.toUpperCase();
+}
+const DotPad = {
+  mod:null, sdk:null, device:null,
+  supported(){ return !!(navigator.bluetooth||navigator.serial); },
+  async _load(){ if(this.mod) return this.mod; this.mod=await import('./DotPadSDK-3.0.0.js'); return this.mod; },
+  async connect(type){
+    try{ const m=await this._load();
+      if(!this.sdk){ this.sdk=new m.DotPadSDK(); this.sdk.setCallBack(this._onMsg.bind(this), this._onKey.bind(this)); }
+      const scanner=new m.DotPadScanner();
+      const dev = type==='usb' ? await scanner.startUsbScan() : await scanner.startBleScan();
+      if(!dev) return false;
+      const d = type==='usb' ? await this.sdk.connectUsbDevice(dev) : await this.sdk.connectBleDevice(dev);
+      if(d){ this.device=d; return true; }
+    }catch(e){ console.warn('Dot Pad connect failed:',e); }
+    return false;
+  },
+  disconnect(){ try{ if(this.sdk) this.sdk.disconnect(); }catch(e){} this.device=null; if(window.app) window.app._dotpadStatus(false); },
+  isConnected(){ return !!(this.device && this.device.isConnect); },
+  _onMsg(device,code,data){ const m=this.mod; if(!m) return;
+    if(code===m.DataCodes.Connected){ this.device=device; if(window.app){ window.app._dotpadStatus(true); window.app._pushTactile(); } }
+    else if(code===m.DataCodes.Disconnected){ if(this.device===device) this.device=null; if(window.app) window.app._dotpadStatus(false); } },
+  _onKey(device,key){ const m=this.mod; if(!m||!window.app) return; const K=m.KeyCodes, inp=window.app.input;
+    switch(key){
+      case K.PanningLeft: inp.pan('left'); break;
+      case K.PanningRight: inp.pan('right'); break;
+      case K.KeyFunction1: inp.pan('up'); break;
+      case K.KeyFunction2: inp.pan('down'); break;
+      case K.KeyFunction3: case K.LPF1: inp.action(); break;
+      case K.KeyFunction4: case K.RPF4: inp.sonar(); break;
+    } },
+  display(matrix){ if(!this.isConnected()||!this.sdk) return;
+    try{ this.sdk.displayGraphicData(matrixToDotPadHex(matrix,this.device), this.device, this.mod.DisplayMode.GraphicMode); }catch(e){} },
+  clear(){ if(!this.isConnected()||!this.sdk) return; try{ this.sdk.displayAllDown(this.device); }catch(e){} },
+};
+
+// ═══════════════════════════════════════════════════════════════════
 // GAME ENGINE
 // ═══════════════════════════════════════════════════════════════════
 class GameEngine {
@@ -1638,7 +1701,7 @@ class App {
   }
   init(){
     Profile.load(); Settings.load(); this._applySettings();
-    this._buildLogo(); this._buildWorlds(); this._bindUI(); this._bindSettings(); this._i18n(); this._injectIcons(); this.refreshProfile();
+    this._buildLogo(); this._buildWorlds(); this._bindUI(); this._bindSettings(); this._i18n(); this._injectIcons(); this.refreshProfile(); this._dotpadStatus(false);
     this._starfield(); this._hubDotPad();
     document.getElementById('hero-img').addEventListener('error',e=>{ e.target.style.display='none'; });
     // low-spec / mobile: default to 2D unless the user has saved an explicit preference
@@ -1660,6 +1723,21 @@ class App {
       document.getElementById('game-canvas-3d').style.display='block';
       if(this.engine.grid&&this.engine.grid.length){ this.renderer3d.resize(this.engine.grid[0].length,this.engine.grid.length); this.renderer3d.fit(); }
     }catch(e){ Settings.data.threeD=false; this._use2D(); }
+  }
+  _dotpadStatus(connected){
+    const txt = connected ? (lang==='ko'?'연결됨':'Connected') : (lang==='ko'?'연결':'Connect');
+    ['dotpad-status','dotpad-conn'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.textContent=txt; el.classList.toggle('on',connected); } });
+    const st=document.getElementById('set-dp-status'); if(st) st.textContent = connected?(lang==='ko'?'연결됨':'Connected'):(lang==='ko'?'연결 안 됨':'Not connected');
+    // route the 60×40 tactile matrix to the device while connected
+    this.tactile.setAdapter(connected ? { send:(m)=>DotPad.display(m) } : null);
+  }
+  _pushTactile(){ const e=this.engine; if(e&&e.grid&&e.grid.length) this.tactile.update(e.grid,e.player.r,e.player.c); else DotPad.clear(); }
+  async connectDotPad(type){
+    if(!DotPad.supported()){ this._announce(lang==='ko'?'이 브라우저는 Dot Pad 연결을 지원하지 않아요. Chrome 계열에서 HTTPS로 열어 주세요.':'This browser does not support Dot Pad. Use a Chromium browser over HTTPS.'); return; }
+    if(DotPad.isConnected()){ DotPad.disconnect(); this._announce(lang==='ko'?'Dot Pad 연결을 해제했어요.':'Dot Pad disconnected.'); return; }
+    this.audio.resume();
+    const ok=await DotPad.connect(type||'ble');
+    this._announce(ok ? (lang==='ko'?'Dot Pad가 연결됐어요.':'Dot Pad connected.') : (lang==='ko'?'Dot Pad 연결에 실패했어요.':'Dot Pad connection failed.'));
   }
   _injectIcons(){ document.querySelectorAll('[data-icon]').forEach(el=>{ if(el.dataset.iconDone)return;
     const s=el.dataset.iconSize?+el.dataset.iconSize:18; el.innerHTML=svgIcon(el.dataset.icon,{size:s}); el.dataset.iconDone='1'; }); }
@@ -1700,6 +1778,8 @@ class App {
     document.getElementById('set-haptic-int').addEventListener('input',e=>{Settings.data.hapticIntensity=parseFloat(e.target.value);Settings.save();});
     document.getElementById('set-haptic-int').addEventListener('change',()=>Haptic.buzz([0,60]));
     document.getElementById('set-3d').addEventListener('change',e=>{Settings.data.threeD=e.target.checked;Settings.save();this._apply3D();});
+    const dpb=document.getElementById('set-dp-ble'); if(dpb) dpb.addEventListener('click',()=>this.connectDotPad('ble'));
+    const dpu=document.getElementById('set-dp-usb'); if(dpu) dpu.addEventListener('click',()=>this.connectDotPad('usb'));
     document.getElementById('btn-set-close').addEventListener('click',()=>this._closeSettings());
     document.getElementById('settings-modal').addEventListener('click',e=>{ if(e.target.id==='settings-modal') this._closeSettings(); });
   }
@@ -1795,13 +1875,15 @@ class App {
       document.getElementById('success-modal').classList.add('hidden'); this._startWorld(this._worldIdx); });
     document.getElementById('btn-lang').addEventListener('click',()=>{
       lang=lang==='ko'?'en':'ko'; const lc=document.getElementById('lang-code'); if(lc) lc.textContent=lang.toUpperCase();
-      document.documentElement.lang=lang; this._i18n(); this._reflectTTS(Settings.data.tts); this._buildWorlds(); this.engine._challenge(); this.engine._hud();
+      document.documentElement.lang=lang; this._i18n(); this._reflectTTS(Settings.data.tts); this._dotpadStatus(DotPad.isConnected()); this._buildWorlds(); this.engine._challenge(); this.engine._hud();
     });
     document.getElementById('btn-tts').addEventListener('click',()=>{ const on=this.tts.toggle();
       Settings.data.tts=on; Settings.save(); this._reflectTTS(on); });
     document.getElementById('btn-hint').addEventListener('click',()=>this.engine.hint());
     document.getElementById('btn-settings').addEventListener('click',()=>this._openSettings());
     const scanBtn=document.getElementById('btn-scan'); if(scanBtn) scanBtn.addEventListener('click',()=>this.engine.sonar());
+    // Dot Pad connect (status badges + settings buttons)
+    ['dotpad-status','dotpad-conn'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('click',()=>this.connectDotPad('ble')); });
     // Dot Pad panning keys (on-screen)
     const pk={ 'pan-up':()=>this.input.pan('up'), 'pan-down':()=>this.input.pan('down'),
       'pan-left':()=>this.input.pan('left'), 'pan-right':()=>this.input.pan('right'), 'pan-act':()=>this.input.action() };

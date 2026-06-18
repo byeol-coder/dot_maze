@@ -48,7 +48,25 @@ A tactile sandbox math game for visually impaired children — *explore shapes w
 
 > 화면의 Dot Pad 키 클러스터와 하단 힌트에 F1~F4 라벨이 표시됩니다. 이동은 셀 사이를 부드럽게 보간(glide)하며, 낮/밤이 자동 전환되고 캐릭터에 항상 켜진 하이라이트가 있어 어떤 조명에서도 잘 보입니다.
 
-## Dot Pad 패닝키 연동
+## 실제 Dot Pad 기기 연동 (DotPadSDK 3.0.0)
+
+`DotPadSDK-3.0.0.js`를 동봉해 **실기기 연결·촉각 그래픽 출력·물리 키 입력**을 지원합니다.
+
+- **연결** — 게임/허브의 Dot Pad 패널 또는 설정의 `Dot Pad 기기 → BLE / USB` 버튼. Web Bluetooth(BLE) 또는 Web Serial(USB)로 페어링 (Chromium 계열 + HTTPS/localhost 필요)
+- **그래픽 출력** — 60×40 촉각 매트릭스를 기기 셀(예: DotPad 320 = 30×10셀)로 변환해 `displayGraphicData()`로 실시간 출력 (SDK GraphicMode 비트순서에 맞춰 변환)
+- **물리 키 입력** — SDK `keyCallBack`을 게임 입력에 연결: 좌/우 패닝키 → 좌우 이동, **F1=위·F2=아래·F3=상호작용·F4=스캔** (화면 키 매핑과 동일)
+- 미연결/미지원 환경에서는 화면상 Dot Pad·키보드로 그대로 플레이
+
+```javascript
+// 연결 시 내부적으로:
+const sdk = new DotPadSDK();
+sdk.setCallBack(onMessage, onKey);              // onKey가 PanningLeft/Right·KeyFunction1~4를 게임에 전달
+const dev = await new DotPadScanner().startBleScan();
+await sdk.connectBleDevice(dev);
+sdk.displayGraphicData(matrixToDotPadHex(matrix, dev), dev, DisplayMode.GraphicMode); // 60×40 → 기기 출력
+```
+
+## (레거시) Dot Pad 패닝키 연동
 
 캐릭터 이동은 키보드, 화면상 패닝키, 그리고 실제 Dot Pad 기기 패닝키를 하나의 `InputController`로 통합합니다.
 
