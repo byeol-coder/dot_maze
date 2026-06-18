@@ -20,10 +20,13 @@ A tactile sandbox math game for visually impaired children — *explore shapes w
 ## 핵심 기능
 
 - **마인크래프트풍 허브** — 플레이어 카드(레벨/XP/별/뱃지), 오늘의 미션, Dot Pad 연결 패널, 월드 카루셀
-- **공간 음향** — Web Audio API, 도형별 고유 음색 + 스테레오 패닝으로 방향 탐색, 근접 비콘·반향음
+- **공간 음향** — Web Audio API, 도형별 고유 음색 + 스테레오 패닝, 근접 비콘·반향음, 월드별 앰비언트 사운드, 발걸음음
+- **소나 스캔(Q)** — 동서남북을 차례로 방향 음(피치·패닝)으로 훑고, 각 방향의 거리·대상을 음성으로 보고
 - **TTS 안내** — SpeechSynthesis(ko-KR/en-US), 이동·수집·오류·힌트 상황별 즉각 음성 피드백
+- **햅틱 피드백** — 벽 충돌·수집·완료 시 진동 패턴(navigator.vibrate)
 - **촉각 매트릭스** — 60×40 Dot Pad 렌더링, Dot Pad SDK 어댑터 연동
-- **복셀 캐릭터** — 방향을 향하는 픽셀 탐험가, 키보드·Dot Pad 패닝키로 조작
+- **복셀 캐릭터** — 방향을 향하는 픽셀 탐험가 + 이동 잔상·수집 파티클, 키보드·Dot Pad 패닝키로 조작
+- **접근성 설정** — 음성 안내·말하기 속도·소리 크기·진동·고대비 화면·모션 줄이기 (localStorage 저장, prefers-reduced-motion 자동 반영)
 - **KO/EN 이중 언어** — 런타임 전환
 
 ## 조작법

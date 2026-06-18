@@ -312,6 +312,34 @@ button{font:inherit;cursor:pointer;}
 /* world select grid */
 .ws-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 
+/* settings modal */
+.set-list{display:flex;flex-direction:column;gap:4px;}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 4px;
+  border-bottom:1px solid var(--card-border);font-size:16px;font-weight:700;color:var(--text);cursor:pointer;}
+.set-switch{appearance:none;width:50px;height:28px;border-radius:99px;background:rgba(255,255,255,.14);
+  border:1px solid var(--card-border);position:relative;cursor:pointer;flex:0 0 auto;transition:background .2s;}
+.set-switch::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;
+  background:#fff;transition:transform .2s;}
+.set-switch:checked{background:linear-gradient(90deg,var(--cyan),var(--neon));}
+.set-switch:checked::after{transform:translateX(22px);}
+.set-range{flex:0 0 150px;accent-color:var(--neon);height:28px;cursor:pointer;}
+
+/* Dot Pad scan button */
+.btn-scan{margin-top:12px;width:100%;height:46px;border-radius:14px;border:1px solid rgba(58,209,255,.4);
+  background:linear-gradient(135deg,rgba(58,209,255,.25),rgba(168,85,247,.2));color:#fff;font-size:15px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s,box-shadow .15s;}
+.btn-scan:hover,.btn-scan:focus-visible{transform:translateY(-1px);box-shadow:0 0 22px rgba(58,209,255,.35);outline:none;}
+.btn-scan:active{transform:scale(.97);}
+
+/* high-contrast mode */
+body.hc{--text:#ffffff;--muted:#e0d8ff;--card:rgba(16,10,40,.96);--card-border:rgba(180,150,255,.65);}
+body.hc .gcard,body.hc .pan-btn,body.hc .btn-sm,body.hc .player-card,body.hc .world-card{border-width:2px;}
+body.hc .dialogue-speaker,body.hc #dialogue-text{color:#fff;}
+body.hc #dialogue-text{font-weight:700;}
+
+/* reduce motion */
+body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transition:none !important;}
+
 #a11y-live{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;}
 
 @media (max-width:1080px){
@@ -492,6 +520,7 @@ button{font:inherit;cursor:pointer;}
           <button class="pan-btn pan-right" id="pan-right" aria-label="오른쪽 이동">→</button>
           <button class="pan-btn pan-down" id="pan-down" aria-label="아래로 이동">↓</button>
         </div>
+        <button class="btn-scan" id="btn-scan" aria-label="주변 스캔 (Q)"><span aria-hidden="true">🔊</span> <span data-i="scan">주변 스캔</span></button>
       </div>
     </aside>
   </div>
@@ -507,6 +536,7 @@ button{font:inherit;cursor:pointer;}
     <div class="key-guide">
       <div class="key-chip"><kbd>↑↓←→</kbd> / <kbd>WASD</kbd> 이동</div>
       <div class="key-chip"><kbd>Space</kbd> 읽기</div>
+      <div class="key-chip"><kbd>Q</kbd> 스캔</div>
       <div class="key-chip"><kbd>H</kbd> 힌트</div>
       <div class="key-chip"><kbd>R</kbd> 반복</div>
     </div>
@@ -536,6 +566,29 @@ button{font:inherit;cursor:pointer;}
     <h2 class="modal-title" id="ws-title" data-i="selectworld">월드 선택</h2>
     <div class="ws-grid" id="ws-grid"></div>
     <button class="btn-sm" id="btn-ws-close" style="justify-self:start"><span data-i="close">닫기</span></button>
+  </div>
+</div>
+
+<!-- settings modal (accessibility) -->
+<div class="overlay hidden" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="set-title">
+  <div class="modal">
+    <div class="modal-kicker">⚙️</div>
+    <h2 class="modal-title" id="set-title" data-i="settings">설정</h2>
+    <div class="set-list">
+      <label class="set-row"><span data-i="set_tts">음성 안내</span>
+        <input type="checkbox" id="set-tts" class="set-switch"></label>
+      <label class="set-row"><span data-i="set_haptic">진동</span>
+        <input type="checkbox" id="set-haptic" class="set-switch"></label>
+      <label class="set-row"><span data-i="set_contrast">고대비 화면</span>
+        <input type="checkbox" id="set-contrast" class="set-switch"></label>
+      <label class="set-row"><span data-i="set_motion">모션 줄이기</span>
+        <input type="checkbox" id="set-motion" class="set-switch"></label>
+      <label class="set-row"><span data-i="set_rate">말하기 속도</span>
+        <input type="range" id="set-rate" min="0.6" max="1.4" step="0.05" class="set-range"></label>
+      <label class="set-row"><span data-i="set_vol">소리 크기</span>
+        <input type="range" id="set-vol" min="0" max="1" step="0.05" class="set-range"></label>
+    </div>
+    <button class="btn-primary" id="btn-set-close" style="justify-self:start"><span data-i="set_close">닫기</span></button>
   </div>
 </div>
 
@@ -702,6 +755,10 @@ const T = {
     tactile:'촉각 매트릭스 60×40', panning:'Dot Pad 패닝키', enter:'탐험 시작!', clear:'월드 클리어!',
     quest:'퀘스트', inventory:'인벤토리', doti:'도티', worldProg:(p)=>`월드 진행 ${p}%`,
     meet:'만나기', step:'밟기', blankN:'빈칸', findExit:'소리로 출구 찾기',
+    scan:'주변 스캔', settings:'설정', sonarStart:'주변을 살펴봅니다.',
+    sonarWall:'벽', sonarOpen:'열린 길', steps:'칸',
+    set_tts:'음성 안내', set_rate:'말하기 속도', set_vol:'소리 크기', set_haptic:'진동',
+    set_contrast:'고대비 화면', set_motion:'모션 줄이기', set_close:'닫기',
     next:'다음 월드', replay:'다시 하기', tohub:'메인으로', selectworld:'월드 선택', close:'닫기',
     locked:'잠김', wall:'벽이에요!', goalOpen:'출구예요! 들어가세요!',
     needMore:(n)=>`아직 ${n}개 더 남았어요!`,
@@ -723,6 +780,10 @@ const T = {
     tactile:'Tactile Matrix 60×40', panning:'Dot Pad Keys', enter:'Start!', clear:'World Clear!',
     quest:'Quest', inventory:'Inventory', doti:'Doti', worldProg:(p)=>`World progress ${p}%`,
     meet:'meet', step:'step', blankN:'Blank', findExit:'Find exit by sound',
+    scan:'Scan', settings:'Settings', sonarStart:'Scanning around you.',
+    sonarWall:'wall', sonarOpen:'open path', steps:'steps',
+    set_tts:'Voice guide', set_rate:'Speech rate', set_vol:'Volume', set_haptic:'Vibration',
+    set_contrast:'High contrast', set_motion:'Reduce motion', set_close:'Close',
     next:'Next World', replay:'Retry', tohub:'Home', selectworld:'Select World', close:'Close',
     locked:'Locked', wall:'Wall!', goalOpen:'Exit! Go through!',
     needMore:(n)=>`${n} more to go!`,
@@ -746,9 +807,12 @@ const nameOf = (cell)=>{const s=SHAPE_INFO[cell],n=NUMBER_INFO[cell];
 // AUDIO ENGINE
 // ═══════════════════════════════════════════════════════════════════
 class AudioEngine {
-  constructor(){ this._ctx=null; this._on=true; }
-  get ctx(){ if(!this._ctx) this._ctx=new (window.AudioContext||window.webkitAudioContext)(); return this._ctx; }
+  constructor(){ this._ctx=null; this._on=true; this._master=null; this._ambient=null; }
+  get ctx(){ if(!this._ctx){ this._ctx=new (window.AudioContext||window.webkitAudioContext)();
+    this._master=this._ctx.createGain(); this._master.gain.value=Settings.data.volume; this._master.connect(this._ctx.destination); }
+    return this._ctx; }
   resume(){ if(this._ctx&&this._ctx.state==='suspended') this._ctx.resume(); }
+  setVolume(v){ this.ctx; if(this._master) this._master.gain.setTargetAtTime(v,this._ctx.currentTime,0.05); }
   _osc(freq,type,dur,pan=0,vol=.22,atk=.01){
     if(!this._on) return;
     try{ const ctx=this.ctx, o=ctx.createOscillator(), g=ctx.createGain(), p=ctx.createStereoPanner();
@@ -756,32 +820,52 @@ class AudioEngine {
       g.gain.setValueAtTime(0,ctx.currentTime); g.gain.linearRampToValueAtTime(vol,ctx.currentTime+atk);
       g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+dur);
       p.pan.setValueAtTime(Math.max(-1,Math.min(1,pan)),ctx.currentTime);
-      o.connect(g); g.connect(p); p.connect(ctx.destination);
+      o.connect(g); g.connect(p); p.connect(this._master);
       o.start(); o.stop(ctx.currentTime+dur+.05);
     }catch(e){}
   }
-  move(pan=0){ this._osc(800,'sine',.07,pan,.08); }
-  wall(){ this._osc(90,'sawtooth',.12,0,.18); this._osc(70,'square',.1,0,.12); }
+  // Per-world ambient soundscape (procedural drones + slow filter sweep)
+  startAmbient(idx=0){
+    this.stopAmbient(); if(!this._on) return;
+    try{ const ctx=this.ctx; const base=[120,96,76,140][idx]||110; const nodes=[];
+      const filt=ctx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=600;
+      const amb=ctx.createGain(); amb.gain.value=0; amb.gain.setTargetAtTime(0.05,ctx.currentTime,2.5);
+      filt.connect(amb); amb.connect(this._master);
+      [base,base*1.5,base*2.01].forEach((f,i)=>{ const o=ctx.createOscillator(); o.type=i===2?'triangle':'sine';
+        o.frequency.value=f; const og=ctx.createGain(); og.gain.value=i===2?0.14:0.4; o.connect(og); og.connect(filt); o.start(); nodes.push(o); });
+      const lfo=ctx.createOscillator(); lfo.frequency.value=0.07; const lg=ctx.createGain(); lg.gain.value=320;
+      lfo.connect(lg); lg.connect(filt.frequency); lfo.start(); nodes.push(lfo);
+      this._ambient={nodes,amb};
+    }catch(e){}
+  }
+  stopAmbient(){ if(this._ambient){ try{ const ctx=this.ctx; this._ambient.amb.gain.setTargetAtTime(0,ctx.currentTime,0.4);
+    const ns=this._ambient.nodes; setTimeout(()=>ns.forEach(n=>{try{n.stop();}catch(e){}}),700); }catch(e){} this._ambient=null; } }
+  footstep(pan=0){ this._osc(190,'sine',.08,pan,.1,.005); this._osc(95,'triangle',.06,pan,.07,.005); }
+  move(pan=0){ this.footstep(pan); }
+  wall(){ this._osc(90,'sawtooth',.12,0,.18); this._osc(70,'square',.1,0,.12); Haptic.buzz(45); }
   shape(cell,pan=0){ const i=SHAPE_INFO[cell]; if(!i)return; this._osc(i.freq,i.wave,.5,pan,.28); setTimeout(()=>this._osc(i.freq*1.5,'sine',.3,pan,.12),120); }
-  collect(cell){ const i=SHAPE_INFO[cell],b=i?i.freq:440; [1,1.25,1.5,2].forEach((r,k)=>setTimeout(()=>this._osc(b*r,'sine',.3,0,.2),k*80)); }
-  number(n,pan=0){ const f=[0,261,294,329,349,392]; this._osc(f[n]||400,'triangle',.4,pan,.22); }
-  goalOpen(){ [523,659,784,1047].forEach((f,k)=>setTimeout(()=>this._osc(f,'sine',.4,0,.2),k*100)); }
-  goalBlocked(){ this._osc(200,'sawtooth',.3,0,.16); }
-  success(){ [523,659,784,659,784,1047].forEach((f,k)=>setTimeout(()=>this._osc(f,'sine',.5,0,.22),k*130)); }
+  collect(cell){ const i=SHAPE_INFO[cell],b=i?i.freq:440; [1,1.25,1.5,2].forEach((r,k)=>setTimeout(()=>this._osc(b*r,'sine',.3,0,.2),k*80)); Haptic.buzz([0,30,40,30]); }
+  number(n,pan=0){ const f=[0,261,294,329,349,392]; this._osc(f[n]||400,'triangle',.4,pan,.22); Haptic.buzz([0,25,30,25]); }
+  goalOpen(){ [523,659,784,1047].forEach((f,k)=>setTimeout(()=>this._osc(f,'sine',.4,0,.2),k*100)); Haptic.buzz([0,60,40,60]); }
+  goalBlocked(){ this._osc(200,'sawtooth',.3,0,.16); Haptic.buzz([0,40,60,40]); }
+  success(){ [523,659,784,659,784,1047,1318].forEach((f,k)=>setTimeout(()=>this._osc(f,'sine',.5,0,.22),k*130)); Haptic.buzz([0,80,50,80,50,160]); }
   hint(pan=0){ this._osc(880,'sine',.15,pan,.16); setTimeout(()=>this._osc(1108,'sine',.15,pan,.12),120); }
-  patOk(){ this._osc(659,'sine',.3,0,.2); setTimeout(()=>this._osc(784,'sine',.4,0,.22),150); }
-  patNo(){ this._osc(220,'sawtooth',.25,0,.18); }
+  patOk(){ this._osc(659,'sine',.3,0,.2); setTimeout(()=>this._osc(784,'sine',.4,0,.22),150); Haptic.buzz([0,30,40,30]); }
+  patNo(){ this._osc(220,'sawtooth',.25,0,.18); Haptic.buzz([0,50,40,50]); }
   beacon(cell,dist,pan){ if(!this._on)return; const i=SHAPE_INFO[cell]; const f=i?i.freq*.5:330; const v=Math.max(.02,.14-dist*.02); this._osc(f,'sine',.2,pan,v,.05); }
   echo(dist,pan){ if(!this._on)return; const v=Math.max(.05,.2-dist*.018); this._osc(330,'sine',.16,pan,v,.02); setTimeout(()=>this._osc(495,'sine',.1,pan,v*.6,.02),60); }
-  setOn(v){ this._on=v; }
-  toggle(){ this._on=!this._on; return this._on; }
+  // Sonar directional ping: dir 0=N,1=E,2=S,3=W — pitch encodes N/S, pan encodes E/W
+  sonarPing(dir,dist,hit){ const pitch=dir===0?900:dir===2?320:560; const pan=dir===1?0.85:dir===3?-0.85:0;
+    const v=Math.max(.06,.22-dist*.02); this._osc(pitch,hit?'triangle':'sine',.16,pan,v,.01); Haptic.buzz(12); }
+  setOn(v){ this._on=v; if(!v) this.stopAmbient(); }
+  toggle(){ this._on=!this._on; if(!this._on) this.stopAmbient(); return this._on; }
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // TTS ENGINE
 // ═══════════════════════════════════════════════════════════════════
 class TTSEngine {
-  constructor(){ this._on=true; this._q=[]; this._busy=false; this._last=''; }
+  constructor(){ this._on=Settings.data.tts; this._q=[]; this._busy=false; this._last=''; }
   speak(text,priority=false){ if(!this._on||!text)return;
     if(priority){ speechSynthesis.cancel(); this._q=[]; this._busy=false; }
     this._q.push(text); this._flush();
@@ -789,7 +873,7 @@ class TTSEngine {
   _flush(){ if(this._busy||!this._q.length)return;
     const text=this._q.shift(); this._last=text; this._busy=true;
     const u=new SpeechSynthesisUtterance(text);
-    u.lang=lang==='ko'?'ko-KR':'en-US'; u.rate=.94; u.pitch=1.05;
+    u.lang=lang==='ko'?'ko-KR':'en-US'; u.rate=Settings.data.rate; u.pitch=1.05; u.volume=Math.min(1,Settings.data.volume+0.2);
     u.onend=u.onerror=()=>{ this._busy=false; this._flush(); };
     speechSynthesis.speak(u);
     const el=document.getElementById('tts-text'); if(el) el.textContent=text;
@@ -845,8 +929,27 @@ class TactileEngine {
 // RENDERER — Canvas 2D + voxel character
 // ═══════════════════════════════════════════════════════════════════
 class Renderer {
-  constructor(canvas){ this.canvas=canvas; this.ctx=canvas.getContext('2d'); this.cell=CELL_SIZE; this._tick=0; }
-  resize(cols,rows){ this.canvas.width=cols*this.cell; this.canvas.height=rows*this.cell; this.fit(); }
+  constructor(canvas){ this.canvas=canvas; this.ctx=canvas.getContext('2d'); this.cell=CELL_SIZE; this._tick=0;
+    this.fx=[]; this.trail=[]; this._lastPR=-1; this._lastPC=-1; }
+  resize(cols,rows){ this.canvas.width=cols*this.cell; this.canvas.height=rows*this.cell; this.fx=[]; this.trail=[]; this._lastPR=-1; this.fit(); }
+  burst(r,c,color){ if(Settings.data.reduceMotion) return; const cs=this.cell, cx=c*cs+cs/2, cy=r*cs+cs/2;
+    for(let i=0;i<18;i++){ const a=Math.PI*2*i/18+Math.random(), sp=1+Math.random()*3.6;
+      this.fx.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,color:color||'#fff',size:2+Math.random()*3}); } }
+  ring(r,c,color){ if(Settings.data.reduceMotion) return; const cs=this.cell;
+    this.fx.push({ring:true,x:c*cs+cs/2,y:r*cs+cs/2,rad:cs*0.4,life:1,color:color||'#3ad1ff'}); }
+  _fx(ctx){ for(const p of this.fx){
+      if(p.ring){ p.rad+=this.cell*0.2; p.life-=0.035; ctx.globalAlpha=Math.max(0,p.life); ctx.strokeStyle=p.color; ctx.lineWidth=3;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.rad,0,7); ctx.stroke(); ctx.globalAlpha=1; }
+      else { p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; p.vx*=0.97; p.life-=0.025; ctx.globalAlpha=Math.max(0,p.life);
+        ctx.fillStyle=p.color; ctx.shadowColor=p.color; ctx.shadowBlur=6; ctx.beginPath(); ctx.arc(p.x,p.y,p.size*p.life,0,7); ctx.fill(); ctx.shadowBlur=0; ctx.globalAlpha=1; }
+    } this.fx=this.fx.filter(p=>p.life>0); }
+  _trailFx(ctx,player,cs){
+    if(player.r!==this._lastPR||player.c!==this._lastPC){
+      if(this._lastPR>=0) this.trail.push({x:this._lastPC*cs+cs/2,y:this._lastPR*cs+cs/2,life:1});
+      this._lastPR=player.r; this._lastPC=player.c; if(this.trail.length>8) this.trail.shift(); }
+    this.trail.forEach(tp=>tp.life-=0.02); this.trail=this.trail.filter(tp=>tp.life>0);
+    this.trail.forEach(tp=>{ ctx.globalAlpha=tp.life*0.4; ctx.fillStyle='#3ad1ff';
+      ctx.beginPath(); ctx.arc(tp.x,tp.y,cs*0.12*tp.life,0,7); ctx.fill(); ctx.globalAlpha=1; }); }
   fit(){ const w=document.getElementById('canvas-wrap'); if(!w)return;
     const s=Math.min(w.clientWidth/this.canvas.width,w.clientHeight/this.canvas.height,1.5)*0.95;
     this.canvas.style.transform=`translate(-50%,-50%) scale(${s})`; }
@@ -855,14 +958,17 @@ class Renderer {
     ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
     for(let r=0;r<grid.length;r++) for(let c=0;c<grid[r].length;c++)
       this._cell(ctx,grid[r][c],c*cs,r*cs,cs,theme,collected,obj,tick,r,c);
+    if(!Settings.data.reduceMotion) this._trailFx(ctx,player,cs);
     this._voxel(ctx,player.c*cs+cs/2,player.r*cs+cs/2,cs,player.facing,tick);
+    this._fx(ctx);
   }
   _cell(ctx,cell,x,y,cs,theme,collected,obj,tick,r,c){
-    const pulse=(Math.sin(tick*.04)+1)/2;
-    if(cell===C.WALL){ ctx.fillStyle=theme.wall||'#1a2548'; ctx.fillRect(x,y,cs,cs);
-      ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.strokeRect(x+.5,y+.5,cs-1,cs-1); return; }
-    ctx.fillStyle=theme.path||'#0a1020'; ctx.fillRect(x,y,cs,cs);
-    if(theme.dark){ // echo cave: dim non-adjacent cells
+    const pulse=(Math.sin(tick*.04)+1)/2; const hc=Settings.data.highContrast;
+    if(cell===C.WALL){ ctx.fillStyle=hc?'#6f7fb5':(theme.wall||'#1a2548'); ctx.fillRect(x,y,cs,cs);
+      ctx.strokeStyle=hc?'rgba(255,255,255,.55)':'rgba(255,255,255,.04)'; ctx.lineWidth=hc?2:1;
+      ctx.strokeRect(x+.5,y+.5,cs-1,cs-1); ctx.lineWidth=1; return; }
+    ctx.fillStyle=hc?'#020308':(theme.path||'#0a1020'); ctx.fillRect(x,y,cs,cs);
+    if(theme.dark&&!hc){ // echo cave: dim non-adjacent cells
       ctx.fillStyle='rgba(8,5,24,0.55)'; ctx.fillRect(x,y,cs,cs);
     }
     if(cell===C.GOAL){ const open=this._goalOpen(collected,obj);
@@ -892,7 +998,7 @@ class Renderer {
     if(obj.type==='fill_patterns') return (obj._filled||0)>=obj.blanks;
     if(obj.type==='echo_navigate') return true; return false; }
   _shape(ctx,type,cx,cy,size,color,tick){
-    ctx.save(); const p=1+Math.sin(tick*.05)*.06; ctx.translate(cx,cy); ctx.scale(p,p);
+    ctx.save(); const p=Settings.data.reduceMotion?1:1+Math.sin(tick*.05)*.06; ctx.translate(cx,cy); ctx.scale(p,p);
     ctx.fillStyle=color; ctx.shadowColor=color; ctx.shadowBlur=10; const r=size/2;
     if(type===C.TRIANGLE){ ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(r*.87,r*.5); ctx.lineTo(-r*.87,r*.5); ctx.closePath(); ctx.fill(); }
     else if(type===C.SQUARE){ ctx.fillRect(-r*.75,-r*.75,r*1.5,r*1.5); }
@@ -903,7 +1009,7 @@ class Renderer {
   }
   // Voxel explorer character (resembles maze_character.png)
   _voxel(ctx,cx,cy,cs,facing,tick){
-    const u=cs/12, bob=Math.sin(tick*.08)*1.5; // unit
+    const u=cs/12, bob=Settings.data.reduceMotion?0:Math.sin(tick*.08)*1.5; // unit
     ctx.save(); ctx.translate(cx,cy+bob);
     // glow base
     ctx.shadowColor='#3ad1ff'; ctx.shadowBlur=16;
@@ -956,6 +1062,7 @@ class InputController {
   action(){ if(this._active) this.h.onAction(); }
   hint(){ if(this._active) this.h.onHint(); }
   repeat(){ this.h.onRepeat(); }
+  sonar(){ if(this._active && this.h.onSonar) this.h.onSonar(); }
   _bind(){
     const KEYS={ ArrowUp:'up',w:'up',W:'up', ArrowDown:'down',s:'down',S:'down',
       ArrowLeft:'left',a:'left',A:'left', ArrowRight:'right',d:'right',D:'right' };
@@ -963,12 +1070,14 @@ class InputController {
       if(KEYS[e.key]){ if(this._modalOpen())return; e.preventDefault(); this.pan(KEYS[e.key]); return; }
       if(e.key===' '||e.key==='Enter'){ if(this._modalOpen())return; e.preventDefault(); this.action(); }
       else if(e.key==='h'||e.key==='H'){ if(this._modalOpen())return; this.hint(); }
+      else if(e.key==='q'||e.key==='Q'){ if(this._modalOpen())return; this.sonar(); }
       else if(e.key==='r'||e.key==='R'){ this.repeat(); }
     });
   }
   _modalOpen(){ return !document.getElementById('intro-modal').classList.contains('hidden')
     || !document.getElementById('success-modal').classList.contains('hidden')
-    || !document.getElementById('ws-modal').classList.contains('hidden'); }
+    || !document.getElementById('ws-modal').classList.contains('hidden')
+    || !document.getElementById('settings-modal').classList.contains('hidden'); }
   // Dot Pad SDK hook: subscribe to physical panning keys.
   // Expected adapter: { onKey(cb) } where cb receives 'up'|'down'|'left'|'right'|'select'
   attachDotPad(adapter){
@@ -1000,6 +1109,17 @@ const Profile = {
 };
 
 // ═══════════════════════════════════════════════════════════════════
+// SETTINGS (accessibility) + HAPTICS
+// ═══════════════════════════════════════════════════════════════════
+const Settings = {
+  data:{ tts:true, rate:0.94, volume:0.8, haptics:true, highContrast:false,
+    reduceMotion:(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)||false },
+  load(){ try{ const s=localStorage.getItem('shapecraft_settings'); if(s) this.data={...this.data,...JSON.parse(s)}; }catch(e){} },
+  save(){ try{ localStorage.setItem('shapecraft_settings',JSON.stringify(this.data)); }catch(e){} },
+};
+const Haptic = { buzz(pattern){ if(Settings.data.haptics && navigator.vibrate){ try{ navigator.vibrate(pattern); }catch(e){} } } };
+
+// ═══════════════════════════════════════════════════════════════════
 // GAME ENGINE
 // ═══════════════════════════════════════════════════════════════════
 class GameEngine {
@@ -1015,6 +1135,7 @@ class GameEngine {
     this.renderer.resize(this.grid[0].length,this.grid.length);
     document.getElementById('game-world-name').textContent=lang==='ko'?w.title.ko:w.title.en;
     this._score(); this._hud(); this._charCard(); this._challenge(); this._scheduleBeacon();
+    this.audio.startAmbient(idx);
   }
   move(dr,dc){
     this.audio.resume();
@@ -1036,11 +1157,11 @@ class GameEngine {
   _interact(cell,r,c){
     const s=SHAPE_INFO[cell];
     if(s){ if(!this.collected.includes(cell)){ this.collected.push(cell); this.grid[r][c]=C.EMPTY;
-      this.audio.collect(cell); this._dialogue(`${t('found',nameOf(cell))} ${lang==='ko'?s.ko.desc:s.en.desc}`);
+      this.audio.collect(cell); this.renderer.burst(r,c,s.color); this._dialogue(`${t('found',nameOf(cell))} ${lang==='ko'?s.ko.desc:s.en.desc}`);
       this.score+=10; this._score(); this._challenge(); } return; }
     const n=NUMBER_INFO[cell];
     if(n && this.obj.type==='sequence_numbers'){ const exp=this.obj._next+1;
-      if(n.num===exp){ this.obj._next++; this.grid[r][c]=C.EMPTY; this.audio.number(n.num);
+      if(n.num===exp){ this.obj._next++; this.grid[r][c]=C.EMPTY; this.audio.number(n.num); this.renderer.burst(r,c,'#a855f7');
         if(this.obj._next<this.obj.targets.length) this._dialogue(t('numStep',n.num,this.obj._next+1));
         else this._dialogue(t('numDone'));
         this.score+=10; this._score(); this._challenge();
@@ -1073,8 +1194,34 @@ class GameEngine {
     else this.tts.speak(t('facing',t('dirs')[this.player.facing]),true);
   }
   _confirmPattern(){ const ch=this._choice; this.grid[ch.r][ch.c]=ch.answer; this.obj._filled++;
-    this.audio.patOk(); this._dialogue(t('patOk')); this.score+=15; this._score(); this._challenge();
+    this.audio.patOk(); this.renderer.burst(ch.r,ch.c,'#5effa0'); this._dialogue(t('patOk')); this.score+=15; this._score(); this._challenge();
     this._choice=null; this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c); }
+  // Sonar scan — sweep N→E→S→W with directional pings + spoken report (key Q / button)
+  sonar(){
+    this.audio.resume(); this.tts.speak(t('sonarStart'),true); this.renderer.ring(this.player.r,this.player.c,'#3ad1ff');
+    DIR.forEach((d,i)=>{ setTimeout(()=>{
+      let dist=6, found=false;
+      for(let k=1;k<=6;k++){ const rr=this.player.r+d.dr*k, cc=this.player.c+d.dc*k;
+        if(rr<0||rr>=this.grid.length||cc<0||cc>=this.grid[0].length){ dist=k; break; }
+        const cell=this.grid[rr][cc]; if(cell===C.WALL){ dist=k; break; }
+        const ss=SHAPE_INFO[cell],nn=NUMBER_INFO[cell];
+        if((ss&&!this.collected.includes(cell))||nn||cell===C.GOAL||cell===C.BLANK){ dist=k; found=true; break; }
+        dist=k; }
+      this.audio.sonarPing(i,dist,found);
+    }, i*240); });
+    setTimeout(()=>{ const dirs=t('dirs'); const out=[];
+      DIR.forEach((d,i)=>{ let item=null,openLen=0;
+        for(let k=1;k<=6;k++){ const rr=this.player.r+d.dr*k, cc=this.player.c+d.dc*k;
+          if(rr<0||rr>=this.grid.length||cc<0||cc>=this.grid[0].length) break;
+          const cell=this.grid[rr][cc]; if(cell===C.WALL) break;
+          const ss=SHAPE_INFO[cell],nn=NUMBER_INFO[cell];
+          if((ss&&!this.collected.includes(cell))||nn||cell===C.GOAL||cell===C.BLANK){ item={cell,k}; break; }
+          openLen=k; }
+        out.push(item?`${dirs[i]} ${item.k}${t('steps')} ${nameOf(item.cell)}`:openLen===0?`${dirs[i]} ${t('sonarWall')}`:`${dirs[i]} ${t('sonarOpen')}`);
+      });
+      this.tts.speak(out.join(', '),true);
+    }, 4*240+220);
+  }
   hint(){
     this.audio.resume(); const obj=this.obj;
     if(obj.type==='echo_navigate'){ const g=this._find(C.GOAL); const dr=g.r-this.player.r,dc=g.c-this.player.c;
@@ -1102,7 +1249,9 @@ class GameEngine {
     if(o.type==='sequence_numbers') return o.targets.length-(o._next||0);
     if(o.type==='fill_patterns') return o.blanks-(o._filled||0); return 0; }
   _complete(){
-    const w=WORLDS[this.worldIdx]; this.audio.success(); this._dialogue(lang==='ko'?w.success.ko:w.success.en);
+    const w=WORLDS[this.worldIdx]; this.audio.success();
+    this.renderer.burst(this.player.r,this.player.c,'#ffd54a'); this.renderer.ring(this.player.r,this.player.c,'#ffd54a');
+    this._dialogue(lang==='ko'?w.success.ko:w.success.en);
     const earned=w.max; Profile.award(w.id,earned);
     const sm=document.getElementById('success-modal');
     document.getElementById('success-title-text').textContent=lang==='ko'?w.title.ko:w.title.en;
@@ -1182,7 +1331,7 @@ class GameEngine {
   start(){ const loop=()=>{ this._tick++; const w=WORLDS[this.worldIdx];
     this.renderer.draw({grid:this.grid,player:this.player,theme:w?w.theme:{},collected:this.collected,obj:this.obj},this._tick);
     this._raf=requestAnimationFrame(loop); }; this._raf=requestAnimationFrame(loop); }
-  stop(){ if(this._raf) cancelAnimationFrame(this._raf); if(this._beacon) clearInterval(this._beacon); }
+  stop(){ if(this._raf) cancelAnimationFrame(this._raf); if(this._beacon) clearInterval(this._beacon); this.audio.stopAmbient(); }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1195,16 +1344,46 @@ class App {
     this.engine=new GameEngine(this.audio,this.tts,this.tactile,this.renderer);
     this.input=new InputController({
       onMove:(dr,dc)=>this.engine.move(dr,dc), onAction:()=>this.engine.action(),
-      onHint:()=>this.engine.hint(), onRepeat:()=>this.tts.repeat(),
+      onHint:()=>this.engine.hint(), onRepeat:()=>this.tts.repeat(), onSonar:()=>this.engine.sonar(),
     });
     this.input.attachDotPad(null); // DOM-event bridge ready; pass real adapter when available
     this._worldIdx=0; this._highestUnlocked=0;
   }
   init(){
-    Profile.load();
-    this._buildLogo(); this._buildWorlds(); this._bindUI(); this._i18n(); this.refreshProfile();
+    Profile.load(); Settings.load(); this._applySettings();
+    this._buildLogo(); this._buildWorlds(); this._bindUI(); this._bindSettings(); this._i18n(); this.refreshProfile();
     this._starfield(); this._hubDotPad();
     document.getElementById('hero-img').addEventListener('error',e=>{ e.target.style.display='none'; });
+  }
+  _applySettings(){
+    document.body.classList.toggle('hc',Settings.data.highContrast);
+    document.body.classList.toggle('rm',Settings.data.reduceMotion);
+    this.tts._on=Settings.data.tts; this.audio.setVolume(Settings.data.volume);
+    const b=document.getElementById('btn-tts'); if(b) b.textContent=Settings.data.tts?'🔊 TTS':'🔇 TTS';
+  }
+  _openSettings(){
+    document.getElementById('set-tts').checked=Settings.data.tts;
+    document.getElementById('set-haptic').checked=Settings.data.haptics;
+    document.getElementById('set-contrast').checked=Settings.data.highContrast;
+    document.getElementById('set-motion').checked=Settings.data.reduceMotion;
+    document.getElementById('set-rate').value=Settings.data.rate;
+    document.getElementById('set-vol').value=Settings.data.volume;
+    document.getElementById('settings-modal').classList.remove('hidden');
+    document.getElementById('btn-set-close').focus();
+  }
+  _closeSettings(){ document.getElementById('settings-modal').classList.add('hidden'); }
+  _bindSettings(){
+    const save=()=>{ Settings.save(); this._applySettings(); };
+    document.getElementById('set-tts').addEventListener('change',e=>{Settings.data.tts=e.target.checked;save();});
+    document.getElementById('set-haptic').addEventListener('change',e=>{Settings.data.haptics=e.target.checked;save(); if(e.target.checked)Haptic.buzz(30);});
+    document.getElementById('set-contrast').addEventListener('change',e=>{Settings.data.highContrast=e.target.checked;save();});
+    document.getElementById('set-motion').addEventListener('change',e=>{Settings.data.reduceMotion=e.target.checked;save();});
+    document.getElementById('set-rate').addEventListener('input',e=>{Settings.data.rate=parseFloat(e.target.value);Settings.save();});
+    document.getElementById('set-rate').addEventListener('change',()=>this.tts.speak(lang==='ko'?'말하기 속도예요.':'This is the speech rate.',true));
+    document.getElementById('set-vol').addEventListener('input',e=>{Settings.data.volume=parseFloat(e.target.value);this.audio.setVolume(Settings.data.volume);Settings.save();});
+    document.getElementById('set-vol').addEventListener('change',()=>this.audio.hint());
+    document.getElementById('btn-set-close').addEventListener('click',()=>this._closeSettings());
+    document.getElementById('settings-modal').addEventListener('click',e=>{ if(e.target.id==='settings-modal') this._closeSettings(); });
   }
   refreshProfile(){
     const d=Profile.data;
@@ -1300,9 +1479,8 @@ class App {
     document.getElementById('btn-tts').addEventListener('click',()=>{ const on=this.tts.toggle();
       document.getElementById('btn-tts').textContent=on?'🔊 TTS':'🔇 TTS'; });
     document.getElementById('btn-hint').addEventListener('click',()=>this.engine.hint());
-    document.getElementById('btn-settings').addEventListener('click',()=>{
-      const on=this.tts.toggle(); document.getElementById('btn-settings').textContent=on?'⚙️':'🔇';
-    });
+    document.getElementById('btn-settings').addEventListener('click',()=>this._openSettings());
+    const scanBtn=document.getElementById('btn-scan'); if(scanBtn) scanBtn.addEventListener('click',()=>this.engine.sonar());
     // Dot Pad panning keys (on-screen)
     const pk={ 'pan-up':()=>this.input.pan('up'), 'pan-down':()=>this.input.pan('down'),
       'pan-left':()=>this.input.pan('left'), 'pan-right':()=>this.input.pan('right'), 'pan-act':()=>this.input.action() };
