@@ -252,8 +252,10 @@ button{font:inherit;cursor:pointer;}
 .lg-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:0 0 auto;}
 .lg-pos{margin-left:auto;}.lg-pos b{color:#fff;}
 .panning-keys{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:7px;justify-content:center;}
-.pan-btn{border-radius:13px;border:1px solid var(--card-border);background:var(--glass);color:#fff;font-size:22px;
+.pan-btn{position:relative;border-radius:13px;border:1px solid var(--card-border);background:var(--glass);color:#fff;font-size:22px;
   display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;transition:background .1s,transform .1s;}
+.pan-btn small{position:absolute;bottom:3px;right:6px;font-size:9px;font-weight:800;color:var(--cyan);opacity:.85;}
+.scan-kbd{font-size:11px;font-weight:800;background:rgba(255,255,255,.15);border:1px solid var(--card-border);border-radius:5px;padding:1px 6px;}
 .pan-btn:active{background:rgba(58,209,255,.3);transform:scale(.92);}
 .pan-up{grid-column:2;grid-row:1;}.pan-left{grid-column:1;grid-row:2;}
 .pan-act{grid-column:2;grid-row:2;background:rgba(168,85,247,.22);}.pan-right{grid-column:3;grid-row:2;}.pan-down{grid-column:2;grid-row:3;}
@@ -515,14 +517,14 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
         <span class="lg"><i class="lg-dot" style="background:#5effa0"></i> <span data-i="lg_target">목표</span></span>
         <span class="lg lg-pos"><b id="hud-pos">—</b> · <span id="hud-facing">—</span></span>
       </div>
-      <div class="panning-keys" aria-label="방향 패닝키">
-        <button class="pan-btn pan-up" id="pan-up" aria-label="위로 이동">↑</button>
-        <button class="pan-btn pan-left" id="pan-left" aria-label="왼쪽 이동">←</button>
-        <button class="pan-btn pan-act" id="pan-act" aria-label="읽기">●</button>
-        <button class="pan-btn pan-right" id="pan-right" aria-label="오른쪽 이동">→</button>
-        <button class="pan-btn pan-down" id="pan-down" aria-label="아래로 이동">↓</button>
+      <div class="panning-keys" aria-label="방향키: F1 위, F2 아래, 좌우 패닝키">
+        <button class="pan-btn pan-up" id="pan-up" aria-label="위로 이동, F1">↑<small>F1</small></button>
+        <button class="pan-btn pan-left" id="pan-left" aria-label="왼쪽으로 이동, 왼쪽 패닝키">←</button>
+        <button class="pan-btn pan-act" id="pan-act" aria-label="수집하고 읽기, F3">●<small>F3</small></button>
+        <button class="pan-btn pan-right" id="pan-right" aria-label="오른쪽으로 이동, 오른쪽 패닝키">→</button>
+        <button class="pan-btn pan-down" id="pan-down" aria-label="아래로 이동, F2">↓<small>F2</small></button>
       </div>
-      <button class="btn-scan" id="btn-scan" aria-label="주변 스캔 (Q)"><span data-icon="radar"></span> <span data-i="scan">주변 스캔</span></button>
+      <button class="btn-scan" id="btn-scan" aria-label="주변 스캔, F4"><span data-icon="radar"></span> <span data-i="scan">주변 스캔</span> <kbd class="scan-kbd">F4</kbd></button>
     </aside>
 
     <!-- BOTTOM-CENTER: dialogue bar -->
@@ -543,9 +545,9 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
 
     <!-- BOTTOM-CENTER: control hints -->
     <div class="hud hud-controls" aria-hidden="true">
-      <span class="ctl"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <span data-i="ctl_move">이동</span></span>
-      <span class="ctl"><kbd>Q</kbd> <span data-i="ctl_scan">스캔</span></span>
-      <span class="ctl"><kbd>Space</kbd> <span data-i="ctl_act">상호작용</span></span>
+      <span class="ctl"><kbd>←</kbd><kbd>→</kbd><kbd>F1</kbd><kbd>F2</kbd> <span data-i="ctl_move">이동</span></span>
+      <span class="ctl"><kbd>F3</kbd> <span data-i="ctl_act">상호작용</span></span>
+      <span class="ctl"><kbd>F4</kbd> <span data-i="ctl_scan">스캔</span></span>
     </div>
 
     <!-- screen-reader-only mirrors (kept for engine + a11y) -->
@@ -1055,9 +1057,11 @@ class Renderer3D {
     this.scene=new T.Scene(); this.scene.fog=new T.Fog(0x06040f,7,28);
     this.camera=new T.PerspectiveCamera(62,1,0.1,140);
     this.r=new T.WebGLRenderer({canvas,antialias:true}); this.r.setPixelRatio(Math.min(window.devicePixelRatio||1,(window.innerWidth<=820?1.25:2))); this.r.setClearColor(0x06040f,1);
-    this.scene.add(new T.AmbientLight(0x7888b8,0.75));
-    const dl=new T.DirectionalLight(0xcfe0ff,0.5); dl.position.set(6,16,5); this.scene.add(dl);
+    this.amb=new T.AmbientLight(0x7888b8,0.75); this.scene.add(this.amb);
+    this.dir=new T.DirectionalLight(0xcfe0ff,0.5); this.dir.position.set(6,16,5); this.scene.add(this.dir);
     this.torch=new T.PointLight(0xffce8a,1.05,16,2); this.scene.add(this.torch);
+    this.hero=new T.PointLight(0xffffff,0.75,5,2); this.scene.add(this.hero); // always lights the explorer
+    this._skyN=new T.Color(0x06040f); this._skyD=new T.Color(0x1c2750); this._skyT=new T.Color();
     this.maze=new T.Group(); this.scene.add(this.maze);
     this._boxGeo=new T.BoxGeometry(1,1,1); this.shapes=[]; this._pp=null; this._cam=null; this.goalMesh=null; this._fx=[]; }
   _hex(c){ return parseInt(String(c).replace('#',''),16); }
@@ -1117,6 +1121,11 @@ class Renderer3D {
     const yaw=[Math.PI,-Math.PI/2,0,Math.PI/2][player.facing]||0;
     let dy=yaw-this.player.rotation.y; while(dy>Math.PI)dy-=2*Math.PI; while(dy<-Math.PI)dy+=2*Math.PI; this.player.rotation.y+=dy*.2;
     this.torch.position.set(this._pp.x,3.5,this._pp.z);
+    this.hero.position.set(this._pp.x,2.0,this._pp.z);
+    // auto day/night cycle: lifts ambient + sky so the character stays readable
+    const day=Settings.data.reduceMotion?0.6:(Math.sin(tick*0.004)+1)/2;
+    this.amb.intensity=0.5+day*0.6; this.dir.intensity=0.32+day*0.45;
+    this._skyT.copy(this._skyN).lerp(this._skyD,day); this.r.setClearColor(this._skyT,1); this.scene.fog.color.copy(this._skyT);
     const fwd=[[0,0,-1],[1,0,0],[0,0,1],[-1,0,0]][player.facing]||[0,0,1];
     const cx=this._pp.x-fwd[0]*4.6, cz=this._pp.z-fwd[2]*4.6;
     if(!this._cam) this._cam=new T.Vector3(cx,4.3,cz);
@@ -1149,7 +1158,7 @@ class Renderer3D {
 class Renderer {
   constructor(canvas){ this.canvas=canvas; this.ctx=canvas.getContext('2d'); this.cell=CELL_SIZE; this._tick=0;
     this.fx=[]; this.trail=[]; this._lastPR=-1; this._lastPC=-1; }
-  resize(cols,rows){ this.canvas.width=cols*this.cell; this.canvas.height=rows*this.cell; this.fx=[]; this.trail=[]; this._lastPR=-1; this.motes=null; this.fit(); }
+  resize(cols,rows){ this.canvas.width=cols*this.cell; this.canvas.height=rows*this.cell; this.fx=[]; this.trail=[]; this._lastPR=-1; this._dispC=null; this.motes=null; this.fit(); }
   burst(r,c,color){ if(Settings.data.reduceMotion) return; const cs=this.cell, cx=c*cs+cs/2, cy=r*cs+cs/2;
     for(let i=0;i<18;i++){ const a=Math.PI*2*i/18+Math.random(), sp=1+Math.random()*3.6;
       this.fx.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,color:color||'#fff',size:2+Math.random()*3}); } }
@@ -1176,9 +1185,13 @@ class Renderer {
     ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
     for(let r=0;r<grid.length;r++) for(let c=0;c<grid[r].length;c++)
       this._cell(ctx,grid[r][c],c*cs,r*cs,cs,theme,collected,obj,tick,r,c);
+    // smooth glide between cells
+    if(this._dispC==null){ this._dispC=player.c; this._dispR=player.r; }
+    const k=Settings.data.reduceMotion?1:0.3;
+    this._dispC+=(player.c-this._dispC)*k; this._dispR+=(player.r-this._dispR)*k;
     this._atmosphere(ctx,player,theme,tick);
     if(!Settings.data.reduceMotion) this._trailFx(ctx,player,cs);
-    this._voxel(ctx,player.c*cs+cs/2,player.r*cs+cs/2,cs,player.facing,tick);
+    this._voxel(ctx,this._dispC*cs+cs/2,this._dispR*cs+cs/2,cs,player.facing,tick);
     this._fx(ctx);
   }
   _initMotes(){ const W=this.canvas.width,H=this.canvas.height;
@@ -1186,11 +1199,15 @@ class Renderer {
       vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3-.05,s:1+Math.random()*2,ph:Math.random()*6})); }
   _atmosphere(ctx,player,theme,tick){
     const cs=this.cell, W=this.canvas.width, H=this.canvas.height, hc=Settings.data.highContrast;
-    // torch / depth vignette centered on the explorer
-    if(!hc){ const px=player.c*cs+cs/2, py=player.r*cs+cs/2; const dark=theme.dark?0.92:0.5;
-      const g=ctx.createRadialGradient(px,py,cs*1.1,px,py,Math.max(W,H)*(theme.dark?0.42:0.92));
+    const day=Settings.data.reduceMotion?0.7:(Math.sin(tick*0.004)+1)/2; // 0 night .. 1 day (auto cycle)
+    const pc=this._dispC!=null?this._dispC:player.c, pr=this._dispR!=null?this._dispR:player.r;
+    // torch / depth vignette centered on the explorer — day phase lifts the darkness for visibility
+    if(!hc){ const px=pc*cs+cs/2, py=pr*cs+cs/2; const dark=(theme.dark?0.9:0.5)*(1-day*0.55);
+      const g=ctx.createRadialGradient(px,py,cs*1.1,px,py,Math.max(W,H)*(theme.dark?0.46:0.95));
       g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,`rgba(2,2,10,${dark})`);
-      ctx.fillStyle=g; ctx.fillRect(0,0,W,H); }
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+      // soft daylight wash brightens the whole board during the day phase
+      if(day>0.15){ ctx.fillStyle=`rgba(150,180,230,${day*0.06})`; ctx.fillRect(0,0,W,H); } }
     // floating ambient motes (fireflies/dust) in the world's accent colour
     if(!Settings.data.reduceMotion){ if(!this.motes||!this.motes.length) this._initMotes();
       const col=theme.accent||'#3ad1ff'; ctx.save();
@@ -1256,10 +1273,12 @@ class Renderer {
   _voxel(ctx,cx,cy,cs,facing,tick){
     const u=cs/12, bob=Settings.data.reduceMotion?0:Math.sin(tick*.08)*1.5; // unit
     ctx.save(); ctx.translate(cx,cy+bob);
-    // glow base
-    ctx.shadowColor='#3ad1ff'; ctx.shadowBlur=16;
-    ctx.fillStyle='rgba(58,209,255,.15)'; ctx.beginPath(); ctx.ellipse(0,u*4,u*4,u*1.6,0,0,7); ctx.fill();
-    ctx.shadowBlur=0;
+    // bright always-on aura so the explorer stays visible in any lighting
+    const halo=ctx.createRadialGradient(0,0,2,0,0,cs*.66);
+    halo.addColorStop(0,'rgba(150,230,255,.34)'); halo.addColorStop(.6,'rgba(120,200,255,.12)'); halo.addColorStop(1,'rgba(120,200,255,0)');
+    ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(0,0,cs*.66,0,7); ctx.fill();
+    // ground shadow ellipse
+    ctx.fillStyle='rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(0,u*5,u*3.4,u*1.3,0,0,7); ctx.fill();
     const HAIR='#7a4a25', SKIN='#e8b58a', SHIRT='#2a5fd0', SHIRT2='#1f47a0', PANT='#1a2f6b', PAD='#3ad1ff', BAG='#8a5a2a';
     const px=(gx,gy,w,h,col)=>{ ctx.fillStyle=col; ctx.fillRect(Math.round(gx*u),Math.round(gy*u),Math.ceil(w*u),Math.ceil(h*u)); };
     if(facing===0){ // back (moving up): show hair + backpack
@@ -1317,10 +1336,14 @@ class InputController {
   repeat(){ this.h.onRepeat(); }
   sonar(){ if(this._active && this.h.onSonar) this.h.onSonar(); }
   _bind(){
-    const KEYS={ ArrowUp:'up',w:'up',W:'up', ArrowDown:'down',s:'down',S:'down',
-      ArrowLeft:'left',a:'left',A:'left', ArrowRight:'right',d:'right',D:'right' };
+    // Dot Pad layout: ←/→ panning keys + F1~F4 function keys (F1 up, F2 down, F3 interact, F4 scan).
+    // Arrow up/down + WASD also kept for desktop convenience.
+    const KEYS={ F1:'up', F2:'down', ArrowLeft:'left', ArrowRight:'right',
+      ArrowUp:'up', ArrowDown:'down', w:'up',W:'up', s:'down',S:'down', a:'left',A:'left', d:'right',D:'right' };
     window.addEventListener('keydown',e=>{
       if(KEYS[e.key]){ if(this._modalOpen())return; e.preventDefault(); this.pan(KEYS[e.key]); return; }
+      if(e.key==='F3'){ if(this._modalOpen())return; e.preventDefault(); this.action(); return; }
+      if(e.key==='F4'){ if(this._modalOpen())return; e.preventDefault(); this.sonar(); return; }
       if(e.key===' '||e.key==='Enter'){ if(this._modalOpen())return; e.preventDefault(); this.action(); }
       else if(e.key==='h'||e.key==='H'){ if(this._modalOpen())return; this.hint(); }
       else if(e.key==='q'||e.key==='Q'){ if(this._modalOpen())return; this.sonar(); }
