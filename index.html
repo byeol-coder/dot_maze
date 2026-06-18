@@ -36,11 +36,11 @@ button{font:inherit;cursor:pointer;}
 
 /* ═══════════════ HUB ═══════════════ */
 #hub{position:fixed;inset:0;z-index:5;display:grid;grid-template-rows:auto 1fr auto;
-  padding:18px 22px;gap:14px;overflow:hidden;}
+  grid-template-columns:minmax(0,1fr);padding:18px 22px;gap:14px;overflow-y:auto;overflow-x:hidden;}
 #hub.hidden{display:none;}
 
 /* header */
-.hub-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;z-index:6;}
+.hub-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;z-index:6;flex-wrap:wrap;}
 .hub-brand{display:flex;flex-direction:column;gap:4px;}
 .brand-row{display:flex;align-items:center;gap:14px;}
 .brand-logo{display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);
@@ -57,7 +57,7 @@ button{font:inherit;cursor:pointer;}
 /* player card */
 .player-card{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:20px;
   background:var(--card);border:1px solid var(--card-border);backdrop-filter:blur(16px);
-  box-shadow:0 12px 40px rgba(0,0,0,.4);}
+  box-shadow:0 12px 40px rgba(0,0,0,.4);min-width:0;flex-shrink:1;}
 .player-avatar{width:52px;height:52px;border-radius:14px;flex:0 0 auto;overflow:hidden;
   background:linear-gradient(135deg,#3a2a66,#1d1142);border:1px solid var(--card-border);
   background-size:cover;background-position:center 8%;}
@@ -76,11 +76,15 @@ button{font:inherit;cursor:pointer;}
   transition:background .15s;}
 .icon-btn:hover{background:rgba(168,85,247,.2);}
 
-/* center stage */
-.hub-stage{position:relative;display:flex;align-items:center;justify-content:center;z-index:5;min-height:0;}
+/* center stage — responsive grid */
+.hub-stage{position:relative;z-index:5;display:grid;align-items:start;align-content:center;
+  grid-template-columns:minmax(230px,280px) minmax(0,1fr) minmax(250px,310px);
+  grid-template-rows:auto auto;
+  grid-template-areas:"mission scene dotpad" "mission actions dotpad";
+  gap:16px 22px;min-height:0;}
 
 /* mission card (left) */
-.mission-card{position:absolute;left:0;top:0;width:268px;padding:18px;border-radius:20px;
+.mission-card{grid-area:mission;align-self:start;width:auto;padding:18px;border-radius:20px;
   background:var(--card);border:1px solid var(--card-border);backdrop-filter:blur(16px);
   box-shadow:0 12px 40px rgba(0,0,0,.4);z-index:7;}
 .mission-head{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:900;
@@ -94,7 +98,7 @@ button{font:inherit;cursor:pointer;}
 .mission-chest{font-size:30px;}
 
 /* dot pad panel (right) */
-.dotpad-panel{position:absolute;right:0;top:0;width:288px;padding:16px;border-radius:20px;
+.dotpad-panel{grid-area:dotpad;align-self:start;width:auto;padding:16px;border-radius:20px;
   background:var(--card);border:1px solid var(--card-border);backdrop-filter:blur(16px);
   box-shadow:0 12px 40px rgba(0,0,0,.4);z-index:7;}
 .dotpad-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
@@ -105,9 +109,8 @@ button{font:inherit;cursor:pointer;}
   border:1px solid var(--card-border);}
 
 /* central scene */
-.scene{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
-  width:min(640px,52vw);height:100%;}
-.portal{position:absolute;top:2%;left:50%;transform:translateX(-50%);width:200px;height:248px;
+.scene{grid-area:scene;position:relative;height:clamp(300px,42vh,440px);justify-self:center;width:100%;}
+.portal{position:absolute;top:0;left:50%;transform:translateX(-50%);width:clamp(150px,46%,200px);aspect-ratio:5/6.2;
   border-radius:14px;border:4px solid var(--neon);
   background:radial-gradient(circle at 50% 50%,rgba(168,85,247,.5),rgba(124,58,237,.18) 70%,transparent);
   box-shadow:0 0 50px rgba(168,85,247,.7),inset 0 0 40px rgba(168,85,247,.5);
@@ -120,10 +123,12 @@ button{font:inherit;cursor:pointer;}
 .portal-diamond{position:absolute;top:-26px;left:50%;transform:translateX(-50%) rotate(45deg);
   width:24px;height:24px;border:3px solid var(--neon);border-radius:4px;
   box-shadow:0 0 16px var(--neon);}
-.hero{position:relative;width:auto;height:58%;max-height:400px;z-index:3;
+.hero{position:absolute;bottom:0;left:50%;width:auto;height:92%;max-width:100%;z-index:3;
   filter:drop-shadow(0 14px 30px rgba(124,58,237,.55));image-rendering:auto;
+  animation:heroFloat 4.5s ease-in-out infinite;
   -webkit-mask-image:radial-gradient(ellipse 66% 82% at 50% 42%,#000 56%,transparent 88%);
   mask-image:radial-gradient(ellipse 66% 82% at 50% 42%,#000 56%,transparent 88%);}
+@keyframes heroFloat{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-10px);}}
 .scene-shapes{display:none;position:absolute;bottom:30%;left:0;right:0;align-items:center;
   justify-content:center;gap:42px;z-index:2;pointer-events:none;}
 .neon-shape{width:54px;height:54px;display:flex;align-items:center;justify-content:center;
@@ -134,8 +139,8 @@ button{font:inherit;cursor:pointer;}
 @keyframes floatY{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
 
 /* hub actions */
-.hub-actions{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
-  display:flex;flex-direction:column;align-items:center;gap:12px;z-index:8;width:min(560px,80%);}
+.hub-actions{grid-area:actions;justify-self:center;display:flex;flex-direction:column;align-items:center;
+  gap:12px;z-index:8;width:100%;max-width:540px;margin:0 auto;}
 .btn-start{width:100%;height:74px;border-radius:20px;border:1px solid rgba(168,85,247,.5);
   background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;font-size:26px;font-weight:950;
   display:flex;align-items:center;justify-content:center;gap:14px;
@@ -309,12 +314,22 @@ button{font:inherit;cursor:pointer;}
 
 #a11y-live{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;}
 
-@media (max-width:760px){
+@media (max-width:1080px){
+  .hub-stage{grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"scene" "actions";grid-template-rows:auto auto;gap:14px;align-content:center;}
   .mission-card,.dotpad-panel{display:none;}
-  .scene{width:90vw;}
-  .brand-title{font-size:28px;}.brand-tag{margin-left:0;}
+  .scene{height:clamp(240px,34vh,380px);}
+}
+@media (max-width:880px){
   .player-card .player-meta{display:none;}
-  .hub-actions{width:92%;}
+  .brand-title{font-size:30px;}.brand-tag{margin-left:0;}
+}
+@media (max-width:620px){
+  .hub-stage{grid-template-columns:1fr;
+    grid-template-areas:"scene" "actions" "mission" "dotpad";}
+  .brand-title{font-size:24px;}.brand-tag{font-size:12px;}
+  .player-card{padding:8px 10px;gap:8px;}
+  .player-stat{padding:0 5px;}
 }
 </style>
 </head>
