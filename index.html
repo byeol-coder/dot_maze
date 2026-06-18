@@ -1457,8 +1457,9 @@ const DotPad = {
   disconnect(){ try{ if(this.sdk) this.sdk.disconnect(); }catch(e){} this.device=null; if(window.app) window.app._dotpadStatus(false); },
   isConnected(){ return !!(this.device && this.device.isConnect); },
   _onMsg(device,code,data){ const m=this.mod; if(!m) return;
-    if(code===m.DataCodes.Connected){ this.device=device; if(window.app){ window.app._dotpadStatus(true); window.app._pushTactile(); } }
-    else if(code===m.DataCodes.Disconnected){ if(this.device===device) this.device=null; if(window.app) window.app._dotpadStatus(false); } },
+    if(code===m.DataCodes.Connected){ this.device=device; console.info('[DotPad] connected:',device&&device.cellType);
+      if(window.app){ window.app._dotpadStatus(true); this.testPulse(); } }
+    else if(code===m.DataCodes.Disconnected){ console.info('[DotPad] disconnected'); if(this.device===device) this.device=null; if(window.app) window.app._dotpadStatus(false); } },
   _onKey(device,key){ const m=this.mod; if(!m||!window.app) return; const K=m.KeyCodes, inp=window.app.input;
     switch(key){
       case K.PanningLeft: inp.pan('left'); break;
@@ -1468,8 +1469,15 @@ const DotPad = {
       case K.KeyFunction3: case K.LPF1: inp.action(); break;
       case K.KeyFunction4: case K.RPF4: inp.sonar(); break;
     } },
-  display(matrix){ if(!this.isConnected()||!this.sdk) return;
-    try{ this.sdk.displayGraphicData(matrixToDotPadHex(matrix,this.device), this.device, this.mod.DisplayMode.GraphicMode); }catch(e){} },
+  // throttled output: keep only the latest frame, send at most ~5/sec to avoid BLE thrash
+  display(matrix){ if(!this.isConnected()||!this.sdk) return; this._pending=matrix; this._flush(); },
+  _flush(){ if(this._timer||!this._pending) return; const m=this._pending; this._pending=null;
+    try{ this.sdk.displayGraphicData(matrixToDotPadHex(m,this.device), this.device, this.mod.DisplayMode.GraphicMode); }
+    catch(e){ console.warn('[DotPad] display error',e); }
+    this._timer=setTimeout(()=>{ this._timer=null; this._flush(); }, 180); },
+  testPulse(){ if(!this.isConnected()||!this.sdk) return; // raise all pins briefly as a "connected" confirmation
+    try{ this.sdk.displayAllUp(this.device); }catch(e){}
+    setTimeout(()=>{ if(window.app) window.app._pushTactile(); }, 900); },
   clear(){ if(!this.isConnected()||!this.sdk) return; try{ this.sdk.displayAllDown(this.device); }catch(e){} },
 };
 
@@ -1496,9 +1504,9 @@ class GameEngine {
     if(dr===-1)this.player.facing=0; else if(dc===1)this.player.facing=1; else if(dr===1)this.player.facing=2; else if(dc===-1)this.player.facing=3;
     this.audio.setListener(this.player.r,this.player.c,this.player.facing);
     const nr=this.player.r+dr, nc=this.player.c+dc;
-    if(nr<0||nr>=this.grid.length||nc<0||nc>=this.grid[0].length){ this.audio.wall(); this.tts.speak(t('wall'),true); return; }
+    if(nr<0||nr>=this.grid.length||nc<0||nc>=this.grid[0].length){ this.audio.wall(); this.tts.speak(t('wall'),true); this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c,this.player.facing); return; }
     const tgt=this.grid[nr][nc];
-    if(tgt===C.WALL){ this.audio.wall(); this.tts.speak(t('wall'),true); return; }
+    if(tgt===C.WALL){ this.audio.wall(); this.tts.speak(t('wall'),true); this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c,this.player.facing); return; }
     if(tgt===C.GOAL){
       if(this._goalOpen()){ this.player.r=nr; this.player.c=nc; this.audio.goalOpen(); this.tts.speak(t('goalOpen')); setTimeout(()=>this._complete(),700); }
       else { this.audio.goalBlocked(); this.tts.speak(t('needMore',this._remaining()),true); }
