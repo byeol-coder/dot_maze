@@ -3,381 +3,497 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>DotCraft Math Maze — 촉각 샌드박스 수학 게임</title>
-<meta name="description" content="시각장애 아동을 위한 소리·촉각 기반 수학 탐험 게임. For visually impaired children — a sound & tactile math sandbox.">
+<title>ShapeCraft by Dot — 촉각 샌드박스 수학 게임</title>
+<meta name="description" content="시각장애 아동을 위한 소리·촉각·음성 기반 수학 탐험 게임. Explore shapes with sound, touch, and voice.">
 <style>
 :root {
-  --bg: #060914;
-  --bg2: #0a0f1e;
-  --wall: #1a2548;
-  --panel: rgba(10,16,31,0.82);
-  --panel-border: rgba(255,255,255,0.13);
-  --text: #f0f6ff;
-  --muted: #8fb0d8;
-  --accent: #4cd8ff;
-  --accent2: #a78bfa;
-  --good: #5effa0;
-  --warn: #ffc84a;
-  --danger: #ff6b8a;
-  --shape-triangle: #ffc84a;
-  --shape-square: #4cd8ff;
-  --shape-circle: #ff8af5;
-  --shape-hexagon: #5effa0;
-  --shape-star: #ffdd55;
-  --shadow: 0 24px 80px rgba(0,0,0,0.55);
-  font-family: ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --bg0:#0a0620; --bg1:#140a30; --bg2:#1d1142;
+  --neon:#a855f7; --neon2:#7c3aed; --cyan:#3ad1ff; --green:#5effa0;
+  --gold:#ffc84a; --pink:#ff8af5;
+  --text:#f3eeff; --muted:#9d8fc4;
+  --card:rgba(18,12,42,0.72); --card-border:rgba(168,85,247,0.28);
+  --glass:rgba(255,255,255,0.05);
+  --shape-triangle:#5effa0; --shape-square:#ffc84a; --shape-circle:#3ad1ff;
+  --shape-hexagon:#a855f7; --shape-star:#ffdd55;
+  font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
-*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
-html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); }
-body {
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg0);color:var(--text);}
+body{
   background:
-    radial-gradient(circle at 15% 20%, rgba(76,216,255,.14), transparent 30%),
-    radial-gradient(circle at 80% 18%, rgba(167,139,250,.13), transparent 28%),
-    radial-gradient(circle at 70% 80%, rgba(94,255,160,.11), transparent 32%),
-    linear-gradient(135deg,#040810 0%,#090f22 55%,#050812 100%);
+    radial-gradient(circle at 50% 30%, rgba(124,58,237,.30), transparent 45%),
+    radial-gradient(circle at 15% 70%, rgba(58,209,255,.10), transparent 35%),
+    radial-gradient(circle at 85% 75%, rgba(168,85,247,.14), transparent 38%),
+    linear-gradient(160deg,#0a0620 0%,#140a30 55%,#0a0620 100%);
 }
+button{font:inherit;cursor:pointer;}
+.hidden{display:none !important;}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px;}
+::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-thumb{background:var(--card-border);border-radius:99px;}
 
-/* ── Layout ── */
-#app { position:fixed; inset:0; display:grid; grid-template-rows:56px 1fr; overflow:hidden; }
+/* pixel stars background overlay */
+#starfield{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;}
 
-/* ── Topbar ── */
-#topbar {
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding:0 16px; border-bottom:1px solid var(--panel-border);
-  background:var(--panel); backdrop-filter:blur(16px);
-  z-index:20;
-}
-.brand { display:flex; align-items:center; gap:10px; font-weight:900; font-size:17px; letter-spacing:.03em; }
-.brand-dots { display:grid; grid-template-columns:repeat(3,1fr); gap:3px; width:22px; height:22px; }
-.brand-dots i { display:block; border-radius:50%; background:var(--accent); box-shadow:0 0 8px rgba(76,216,255,.7); }
-.brand strong { color:#fff; }
-.brand span { color:var(--accent); }
-.top-right { display:flex; align-items:center; gap:8px; }
-.btn-sm {
-  height:34px; padding:0 12px; border-radius:12px; border:1px solid var(--panel-border);
-  background:rgba(255,255,255,.07); color:var(--text); font:inherit; font-size:13px;
-  font-weight:700; cursor:pointer; transition:background .15s,border-color .15s;
-  display:inline-flex; align-items:center; gap:6px;
-}
-.btn-sm:hover,.btn-sm:focus-visible { background:rgba(255,255,255,.14); border-color:var(--accent); outline:none; }
-#score-display { font-size:15px; font-weight:900; color:var(--warn); }
-#level-display { font-size:13px; color:var(--muted); }
+/* ═══════════════ HUB ═══════════════ */
+#hub{position:fixed;inset:0;z-index:5;display:grid;grid-template-rows:auto 1fr auto;
+  padding:18px 22px;gap:14px;overflow:hidden;}
+#hub.hidden{display:none;}
 
-/* ── Game area ── */
-#game-area { position:relative; overflow:hidden; display:flex; align-items:stretch; }
-#canvas-wrap { flex:1; position:relative; overflow:hidden; cursor:none; }
-#game-canvas { display:block; position:absolute; top:50%; left:50%; transform-origin:center center; image-rendering:pixelated; }
+/* header */
+.hub-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;z-index:6;}
+.hub-brand{display:flex;flex-direction:column;gap:4px;}
+.brand-row{display:flex;align-items:center;gap:14px;}
+.brand-logo{display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);
+  gap:3px;width:46px;height:46px;flex:0 0 auto;}
+.brand-logo i{display:block;border-radius:50%;background:#3a2a66;}
+.brand-logo i.on{background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+.brand-title{font-size:38px;font-weight:950;letter-spacing:-.02em;line-height:1;}
+.brand-title b{color:#fff;}
+.brand-title .by{font-size:20px;color:var(--muted);font-weight:700;margin-left:6px;}
+.brand-title .dot{color:var(--neon);}
+.brand-tag{font-size:14px;color:var(--muted);font-weight:600;margin-left:60px;}
+.brand-tag .s{color:var(--cyan);}.brand-tag .t{color:var(--green);}.brand-tag .v{color:var(--pink);}
 
-/* ── Side panels ── */
-#side-right {
-  width:240px; flex:0 0 240px; display:grid; grid-template-rows:auto auto 1fr;
-  border-left:1px solid var(--panel-border); background:var(--panel); overflow:hidden;
-}
-@media (max-width: 900px) {
-  #side-right { display:none; }
-}
+/* player card */
+.player-card{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:20px;
+  background:var(--card);border:1px solid var(--card-border);backdrop-filter:blur(16px);
+  box-shadow:0 12px 40px rgba(0,0,0,.4);}
+.player-avatar{width:52px;height:52px;border-radius:14px;flex:0 0 auto;overflow:hidden;
+  background:linear-gradient(135deg,#3a2a66,#1d1142);border:1px solid var(--card-border);
+  background-size:cover;background-position:center 8%;}
+.player-meta{display:flex;flex-direction:column;gap:3px;min-width:150px;}
+.player-name{font-size:16px;font-weight:900;color:#fff;}
+.player-level{font-size:12px;color:var(--muted);}
+.xp-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:3px;}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--neon));border-radius:99px;transition:width .5s;}
+.xp-text{font-size:10px;color:var(--muted);margin-top:2px;}
+.player-stat{display:flex;flex-direction:column;align-items:center;gap:1px;padding:0 8px;}
+.player-stat .ic{font-size:20px;}
+.player-stat .val{font-size:18px;font-weight:950;color:#fff;line-height:1;}
+.player-stat .lbl{font-size:10px;color:var(--muted);}
+.icon-btn{width:42px;height:42px;border-radius:12px;border:1px solid var(--card-border);
+  background:var(--glass);color:var(--text);font-size:18px;display:flex;align-items:center;justify-content:center;
+  transition:background .15s;}
+.icon-btn:hover{background:rgba(168,85,247,.2);}
 
-.panel-section {
-  padding:14px 16px; border-bottom:1px solid var(--panel-border);
-}
-.panel-label { font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+/* center stage */
+.hub-stage{position:relative;display:flex;align-items:center;justify-content:center;z-index:5;min-height:0;}
 
-/* HUD */
-#hud-pos { font-size:22px; font-weight:900; color:#fff; letter-spacing:-.02em; }
-#hud-facing { font-size:13px; color:var(--muted); margin-top:4px; }
-#hud-nearby { margin-top:10px; display:grid; gap:6px; }
-.nearby-item {
-  display:flex; align-items:center; gap:8px; padding:6px 10px;
-  border-radius:10px; border:1px solid var(--panel-border); background:rgba(255,255,255,.04);
-  font-size:13px;
-}
-.nearby-dot { width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
+/* mission card (left) */
+.mission-card{position:absolute;left:0;top:0;width:268px;padding:18px;border-radius:20px;
+  background:var(--card);border:1px solid var(--card-border);backdrop-filter:blur(16px);
+  box-shadow:0 12px 40px rgba(0,0,0,.4);z-index:7;}
+.mission-head{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:900;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;}
+.mission-text{font-size:19px;font-weight:800;line-height:1.4;color:#fff;}
+.mission-reward{display:flex;align-items:center;justify-content:space-between;margin-top:14px;
+  padding-top:12px;border-top:1px solid var(--card-border);}
+.mission-reward .r{display:flex;flex-direction:column;}
+.mission-reward .r .l{font-size:11px;color:var(--muted);}
+.mission-reward .r .v{font-size:15px;font-weight:900;color:var(--gold);}
+.mission-chest{font-size:30px;}
 
-/* Math challenge */
-#challenge-text { font-size:14px; line-height:1.65; color:var(--text); }
-#challenge-progress { margin-top:10px; display:flex; gap:6px; flex-wrap:wrap; }
-.shape-badge {
-  display:inline-flex; align-items:center; justify-content:center;
-  width:32px; height:32px; border-radius:10px; font-size:17px;
-  border:2px solid var(--panel-border); background:rgba(255,255,255,.05);
-  transition:all .2s;
-}
-.shape-badge.collected { border-color:var(--good); background:rgba(94,255,160,.15); }
+/* dot pad panel (right) */
+.dotpad-panel{position:absolute;right:0;top:0;width:288px;padding:16px;border-radius:20px;
+  background:var(--card);border:1px solid var(--card-border);backdrop-filter:blur(16px);
+  box-shadow:0 12px 40px rgba(0,0,0,.4);z-index:7;}
+.dotpad-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.dotpad-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:900;color:#fff;}
+.dotpad-status{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--green);}
+.dotpad-status::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);}
+#hub-dotpad-canvas{display:block;width:100%;height:130px;border-radius:12px;background:#060312;
+  border:1px solid var(--card-border);}
 
-/* TTS panel */
-#tts-text {
-  font-size:13px; line-height:1.6; color:var(--text);
-  max-height:120px; overflow-y:auto;
-  border-radius:10px; padding:8px 10px;
-  background:rgba(76,216,255,.06); border:1px solid rgba(76,216,255,.16);
-}
+/* central scene */
+.scene{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  width:min(640px,52vw);height:100%;}
+.portal{position:absolute;top:2%;left:50%;transform:translateX(-50%);width:200px;height:248px;
+  border-radius:14px;border:4px solid var(--neon);
+  background:radial-gradient(circle at 50% 50%,rgba(168,85,247,.5),rgba(124,58,237,.18) 70%,transparent);
+  box-shadow:0 0 50px rgba(168,85,247,.7),inset 0 0 40px rgba(168,85,247,.5);
+  animation:portalPulse 3s ease-in-out infinite;}
+@keyframes portalPulse{0%,100%{box-shadow:0 0 50px rgba(168,85,247,.6),inset 0 0 40px rgba(168,85,247,.45);}
+  50%{box-shadow:0 0 75px rgba(168,85,247,.9),inset 0 0 55px rgba(168,85,247,.65);}}
+.portal-grid{position:absolute;inset:14px;border-radius:8px;
+  background-image:radial-gradient(rgba(255,255,255,.55) 1px,transparent 1.4px);
+  background-size:13px 13px;opacity:.5;}
+.portal-diamond{position:absolute;top:-26px;left:50%;transform:translateX(-50%) rotate(45deg);
+  width:24px;height:24px;border:3px solid var(--neon);border-radius:4px;
+  box-shadow:0 0 16px var(--neon);}
+.hero{position:relative;width:auto;height:58%;max-height:400px;z-index:3;
+  filter:drop-shadow(0 14px 30px rgba(124,58,237,.55));image-rendering:auto;
+  -webkit-mask-image:radial-gradient(ellipse 66% 82% at 50% 42%,#000 56%,transparent 88%);
+  mask-image:radial-gradient(ellipse 66% 82% at 50% 42%,#000 56%,transparent 88%);}
+.scene-shapes{display:none;position:absolute;bottom:30%;left:0;right:0;align-items:center;
+  justify-content:center;gap:42px;z-index:2;pointer-events:none;}
+.neon-shape{width:54px;height:54px;display:flex;align-items:center;justify-content:center;
+  animation:floatY 3.4s ease-in-out infinite;}
+.neon-shape svg{width:100%;height:100%;}
+.neon-shape:nth-child(2){animation-delay:.6s;}
+.neon-shape:nth-child(3){animation-delay:1.2s;}
+@keyframes floatY{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
 
-/* ── Bottom bar ── */
-#bottom-bar {
-  position:absolute; bottom:0; left:0; right:240px;
-  border-top:1px solid var(--panel-border); background:var(--panel); backdrop-filter:blur(12px);
-  padding:10px 16px; display:flex; align-items:center; justify-content:space-between; gap:16px;
-  z-index:10;
-}
-@media (max-width:900px) { #bottom-bar { right:0; } }
-#tactile-wrap { display:flex; flex-direction:column; gap:4px; }
-.tactile-label { font-size:10px; color:var(--muted); font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
-#tactile-canvas { border-radius:6px; border:1px solid rgba(76,216,255,.2); background:#020509; display:block; }
+/* hub actions */
+.hub-actions{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:12px;z-index:8;width:min(560px,80%);}
+.btn-start{width:100%;height:74px;border-radius:20px;border:1px solid rgba(168,85,247,.5);
+  background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;font-size:26px;font-weight:950;
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  box-shadow:0 16px 44px rgba(124,58,237,.55),0 0 40px rgba(168,85,247,.3);
+  transition:transform .15s,box-shadow .15s;}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 22px 56px rgba(124,58,237,.7),0 0 50px rgba(168,85,247,.45);}
+.btn-start .play{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;font-size:20px;}
+.hub-sub-actions{display:flex;gap:14px;width:100%;}
+.btn-sub{flex:1;height:54px;border-radius:16px;border:1px solid var(--card-border);
+  background:var(--card);color:var(--text);font-size:16px;font-weight:800;backdrop-filter:blur(12px);
+  display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s,border-color .15s;}
+.btn-sub:hover{background:rgba(168,85,247,.16);border-color:var(--neon);}
+.btn-sub .ic{color:var(--cyan);font-size:18px;}
 
-/* ── Mobile D-pad ── */
-#dpad {
-  display:none; grid-template-columns:48px 48px 48px; grid-template-rows:48px 48px;
-  gap:6px; place-items:center;
-}
-@media (max-width:700px) { #dpad { display:grid; } }
-.dpad-btn {
-  width:48px; height:48px; border-radius:14px; border:1px solid var(--panel-border);
-  background:rgba(255,255,255,.09); color:#fff; font-size:20px;
-  cursor:pointer; display:flex; align-items:center; justify-content:center;
-  -webkit-tap-highlight-color:transparent; touch-action:manipulation; user-select:none;
-  transition:background .1s,transform .1s;
-}
-.dpad-btn:active { background:rgba(76,216,255,.28); transform:scale(.92); }
-#dpad-up { grid-column:2; grid-row:1; }
-#dpad-left { grid-column:1; grid-row:2; }
-#dpad-center { grid-column:2; grid-row:2; }
-#dpad-right { grid-column:3; grid-row:2; }
+/* worlds carousel */
+.hub-worlds{display:flex;align-items:center;gap:16px;z-index:6;}
+.worlds-label{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;color:var(--muted);}
+.worlds-label .globe{font-size:30px;}
+.worlds-label .txt{font-size:14px;font-weight:900;color:var(--text);}
+.worlds-track{display:flex;gap:14px;flex:1;overflow-x:auto;padding:4px 2px 8px;scroll-behavior:smooth;}
+.world-card{position:relative;flex:0 0 auto;width:220px;height:110px;border-radius:18px;overflow:hidden;
+  border:1px solid var(--card-border);background:var(--card);text-align:left;
+  box-shadow:0 10px 30px rgba(0,0,0,.4);transition:transform .15s,border-color .15s,box-shadow .15s;}
+.world-card:hover:not(.locked){transform:translateY(-4px);border-color:var(--neon);
+  box-shadow:0 16px 40px rgba(124,58,237,.4);}
+.world-card.locked{opacity:.55;cursor:not-allowed;}
+.world-thumb{position:absolute;inset:0;background-size:cover;background-position:center;}
+.world-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,6,32,.1),rgba(10,6,32,.86));}
+.world-num{position:absolute;top:10px;left:10px;width:30px;height:30px;border-radius:9px;
+  display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:950;color:#fff;
+  border:1px solid rgba(255,255,255,.3);}
+.world-info{position:absolute;left:12px;bottom:10px;right:12px;}
+.world-name{font-size:17px;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.7);}
+.world-stars{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:800;color:var(--gold);margin-top:3px;}
+.worlds-next{flex:0 0 auto;width:56px;height:110px;border-radius:18px;border:1px solid var(--card-border);
+  background:var(--card);color:var(--text);font-size:22px;display:flex;align-items:center;justify-content:center;}
+.worlds-next:hover{background:rgba(168,85,247,.16);}
 
-/* ── Modals ── */
-.modal-overlay {
-  position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;
-  padding:20px; background:rgba(4,8,18,.88); backdrop-filter:blur(14px);
-}
-.modal-overlay[hidden] { display:none !important; }
-.modal-card {
-  width:min(640px,100%); border:1px solid rgba(255,255,255,.18); border-radius:28px;
-  background:linear-gradient(145deg,rgba(255,255,255,.1),rgba(255,255,255,.04));
-  box-shadow:0 32px 96px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.12);
-  padding:32px; display:grid; gap:18px;
-}
-.modal-kicker { font-size:12px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); }
-.modal-title { font-size:clamp(28px,5vw,52px); font-weight:950; line-height:.95; letter-spacing:-.04em; color:#fff; }
-.modal-title span { color:var(--accent); }
-.modal-body { font-size:16px; line-height:1.7; color:rgba(240,246,255,.84); }
-.key-guide { display:flex; flex-wrap:wrap; gap:6px; }
-.key-chip {
-  display:inline-flex; align-items:center; gap:5px; height:30px; padding:0 10px;
-  border-radius:999px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.07);
-  font-size:12px; font-weight:700; color:rgba(240,246,255,.9);
-}
-.key-chip kbd { background:rgba(255,255,255,.15); border-radius:5px; padding:1px 5px; font-size:11px; }
-.btn-primary {
-  height:48px; padding:0 24px; border-radius:16px; border:1px solid rgba(76,216,255,.4);
-  background:linear-gradient(135deg,rgba(32,180,255,.36),rgba(167,139,250,.28));
-  color:#fff; font:inherit; font-size:16px; font-weight:900; cursor:pointer;
-  box-shadow:0 12px 32px rgba(0,0,0,.24),0 0 24px rgba(76,216,255,.1);
-  transition:transform .15s,box-shadow .15s;
-}
-.btn-primary:hover,.btn-primary:focus-visible { transform:translateY(-2px); box-shadow:0 16px 40px rgba(0,0,0,.3),0 0 30px rgba(76,216,255,.18); outline:none; }
-.shape-legend { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.legend-item { display:flex; align-items:center; gap:10px; font-size:14px; }
-.legend-icon { width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex:0 0 auto; }
+/* ═══════════════ GAME ═══════════════ */
+#game{position:fixed;inset:0;z-index:4;display:grid;grid-template-rows:54px 1fr;}
+#game.hidden{display:none;}
+#game-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;
+  border-bottom:1px solid var(--card-border);background:var(--card);backdrop-filter:blur(14px);z-index:20;}
+.g-left{display:flex;align-items:center;gap:12px;}
+.btn-back{height:34px;padding:0 12px;border-radius:11px;border:1px solid var(--card-border);
+  background:var(--glass);color:var(--text);font-size:13px;font-weight:800;display:flex;align-items:center;gap:6px;}
+.btn-back:hover{background:rgba(168,85,247,.18);}
+#game-world-name{font-size:15px;font-weight:900;color:#fff;}
+.g-right{display:flex;align-items:center;gap:8px;}
+.btn-sm{height:34px;padding:0 12px;border-radius:11px;border:1px solid var(--card-border);
+  background:var(--glass);color:var(--text);font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:6px;
+  transition:background .15s,border-color .15s;}
+.btn-sm:hover{background:rgba(168,85,247,.18);border-color:var(--neon);}
+#g-score{font-size:15px;font-weight:950;color:var(--gold);}
 
-/* ── Success modal extras ── */
-#success-stars { font-size:40px; letter-spacing:.1em; text-align:center; }
-.modal-actions { display:flex; gap:12px; flex-wrap:wrap; }
+#game-area{position:relative;overflow:hidden;display:flex;align-items:stretch;}
+#canvas-wrap{flex:1;position:relative;overflow:hidden;}
+#game-canvas{display:block;position:absolute;top:50%;left:50%;transform-origin:center;image-rendering:pixelated;}
 
-/* ── ARIA live ── */
-#a11y-live { position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+/* side panel */
+#side-right{width:248px;flex:0 0 248px;display:grid;grid-template-rows:auto auto auto 1fr;
+  border-left:1px solid var(--card-border);background:var(--card);overflow:hidden;backdrop-filter:blur(14px);}
+@media (max-width:980px){#side-right{display:none;}}
+.panel-sec{padding:14px 16px;border-bottom:1px solid var(--card-border);}
+.panel-lbl{font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;}
+#hud-pos{font-size:22px;font-weight:950;color:#fff;}
+#hud-facing{font-size:13px;color:var(--muted);margin-top:3px;}
+#hud-nearby{margin-top:10px;display:grid;gap:6px;}
+.nearby-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;
+  border:1px solid var(--card-border);background:var(--glass);font-size:13px;}
+.nearby-dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;}
+#challenge-text{font-size:14px;line-height:1.6;}
+#challenge-progress{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;}
+.shape-badge{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;
+  border-radius:10px;font-size:17px;border:2px solid var(--card-border);background:var(--glass);transition:all .2s;}
+.shape-badge.collected{border-color:var(--green);background:rgba(94,255,160,.15);}
+#tts-text{font-size:13px;line-height:1.55;border-radius:10px;padding:8px 10px;
+  background:rgba(58,209,255,.06);border:1px solid rgba(58,209,255,.16);max-height:120px;overflow-y:auto;}
 
-/* Focus ring */
-:focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+/* bottom bar: tactile + dot pad panning keys */
+#bottom-bar{position:absolute;bottom:0;left:0;right:248px;border-top:1px solid var(--card-border);
+  background:var(--card);backdrop-filter:blur(12px);padding:10px 16px;display:flex;align-items:center;
+  justify-content:space-between;gap:16px;z-index:10;}
+@media (max-width:980px){#bottom-bar{right:0;}}
+.tactile-wrap{display:flex;flex-direction:column;gap:4px;}
+.tactile-lbl{font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+#tactile-canvas{border-radius:6px;border:1px solid rgba(58,209,255,.2);background:#060312;display:block;}
 
-/* Scrollbar */
-::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:var(--panel-border); border-radius:99px; }
+/* Dot Pad panning keys */
+.panning{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.panning-lbl{font-size:10px;color:var(--cyan);font-weight:800;letter-spacing:.06em;text-transform:uppercase;}
+.panning-keys{display:grid;grid-template-columns:46px 46px 46px;grid-template-rows:46px 46px;gap:5px;}
+.pan-btn{border-radius:12px;border:1px solid var(--card-border);background:var(--glass);color:#fff;
+  font-size:19px;display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;transition:background .1s,transform .1s;}
+.pan-btn:active{background:rgba(58,209,255,.3);transform:scale(.92);}
+.pan-up{grid-column:2;grid-row:1;}.pan-left{grid-column:1;grid-row:2;}
+.pan-act{grid-column:2;grid-row:2;background:rgba(168,85,247,.2);}.pan-right{grid-column:3;grid-row:2;}
+
+/* ═══════════════ MODALS ═══════════════ */
+.overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:rgba(10,6,32,.9);backdrop-filter:blur(14px);}
+.overlay.hidden{display:none !important;}
+.modal{width:min(620px,100%);border:1px solid var(--card-border);border-radius:26px;
+  background:linear-gradient(150deg,rgba(29,17,66,.95),rgba(20,10,48,.9));
+  box-shadow:0 32px 90px rgba(0,0,0,.6);padding:30px;display:grid;gap:16px;}
+.modal-kicker{font-size:12px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);}
+.modal-title{font-size:clamp(26px,5vw,46px);font-weight:950;line-height:.98;letter-spacing:-.03em;color:#fff;}
+.modal-title span{color:var(--neon);}
+.modal-body{font-size:16px;line-height:1.65;color:rgba(243,238,255,.85);}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.legend-item{display:flex;align-items:center;gap:10px;font-size:14px;}
+.legend-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex:0 0 auto;}
+.key-guide{display:flex;flex-wrap:wrap;gap:6px;}
+.key-chip{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;border-radius:99px;
+  border:1px solid var(--card-border);background:var(--glass);font-size:12px;font-weight:700;}
+.key-chip kbd{background:rgba(255,255,255,.14);border-radius:5px;padding:1px 5px;font-size:11px;}
+.btn-primary{height:50px;padding:0 24px;border-radius:16px;border:1px solid rgba(168,85,247,.5);
+  background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;font-size:16px;font-weight:950;
+  box-shadow:0 12px 32px rgba(124,58,237,.4);transition:transform .15s;}
+.btn-primary:hover{transform:translateY(-2px);}
+.modal-actions{display:flex;gap:12px;flex-wrap:wrap;}
+#success-stars{font-size:42px;text-align:center;letter-spacing:.1em;}
+
+/* world select grid */
+.ws-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+#a11y-live{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;}
+
+@media (max-width:760px){
+  .mission-card,.dotpad-panel{display:none;}
+  .scene{width:90vw;}
+  .brand-title{font-size:28px;}.brand-tag{margin-left:0;}
+  .player-card .player-meta{display:none;}
+  .hub-actions{width:92%;}
+}
 </style>
 </head>
 <body>
-<div id="app" role="application" aria-label="DotCraft Math Maze">
+<canvas id="starfield" aria-hidden="true"></canvas>
 
-  <!-- Topbar -->
-  <header id="topbar">
-    <div class="brand" aria-hidden="true">
-      <div class="brand-dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <strong>Dot</strong><span>Craft</span>&nbsp;Math Maze
+<!-- ═══════════════ HUB ═══════════════ -->
+<main id="hub" role="region" aria-label="ShapeCraft 메인 화면">
+  <!-- header -->
+  <header class="hub-header">
+    <div class="hub-brand">
+      <div class="brand-row">
+        <div class="brand-logo" id="brand-logo" aria-hidden="true"></div>
+        <div class="brand-title"><b>Shape</b><span class="dot">Craft</span><span class="by">by</span><span class="dot">Dot</span></div>
+      </div>
+      <div class="brand-tag" data-i="tagline">Explore shapes with <span class="s">sound</span>, <span class="t">touch</span>, and <span class="v">voice</span>.</div>
     </div>
-    <div class="top-right">
-      <span id="level-display">Level 1</span>
-      <span id="score-display">⭐ 0</span>
+    <div class="player-card">
+      <div class="player-avatar" id="player-avatar"></div>
+      <div class="player-meta">
+        <div class="player-name" id="player-name">Dot Explorer</div>
+        <div class="player-level"><span data-i="level">레벨</span> <span id="player-level">1</span></div>
+        <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+        <div class="xp-text" id="xp-text">0 / 100 XP</div>
+      </div>
+      <div class="player-stat"><span class="ic">⭐</span><span class="val" id="stat-stars">0</span><span class="lbl" data-i="stars">Stars</span></div>
+      <div class="player-stat"><span class="ic">🛡️</span><span class="val" id="stat-badges">0</span><span class="lbl" data-i="badges">Badges</span></div>
+      <button class="icon-btn" id="btn-settings" aria-label="설정">⚙️</button>
+    </div>
+  </header>
+
+  <!-- center stage -->
+  <div class="hub-stage">
+    <!-- mission -->
+    <div class="mission-card">
+      <div class="mission-head"><span>🚩</span><span data-i="mission">Today's Mission</span></div>
+      <div class="mission-text" id="mission-text">삼각형 열쇠를 찾아 문을 여세요.</div>
+      <div class="mission-reward">
+        <div class="r"><span class="l" data-i="reward">Reward</span><span class="v">⭐ 25 <span data-i="stars2">Stars</span></span></div>
+        <div class="mission-chest">🎁</div>
+      </div>
+    </div>
+
+    <!-- scene -->
+    <div class="scene">
+      <div class="portal"><div class="portal-diamond"></div><div class="portal-grid"></div></div>
+      <div class="scene-shapes">
+        <div class="neon-shape"><svg viewBox="0 0 40 40"><polygon points="20,5 35,33 5,33" fill="none" stroke="#5effa0" stroke-width="3" style="filter:drop-shadow(0 0 6px #5effa0)"/></svg></div>
+        <div class="neon-shape"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="none" stroke="#3ad1ff" stroke-width="3" style="filter:drop-shadow(0 0 6px #3ad1ff)"/></svg></div>
+        <div class="neon-shape"><svg viewBox="0 0 40 40"><rect x="7" y="7" width="26" height="26" rx="2" fill="none" stroke="#ffc84a" stroke-width="3" style="filter:drop-shadow(0 0 6px #ffc84a)"/></svg></div>
+      </div>
+      <img class="hero" id="hero-img" src="./maze_character.png" alt="복셀 탐험가 캐릭터가 Dot Pad를 들고 있습니다">
+    </div>
+
+    <!-- dot pad -->
+    <div class="dotpad-panel">
+      <div class="dotpad-head">
+        <div class="dotpad-title"><span>📟</span> Dot Pad</div>
+        <div class="dotpad-status" id="dotpad-status">Connected</div>
+      </div>
+      <canvas id="hub-dotpad-canvas" width="256" height="130" aria-hidden="true"></canvas>
+    </div>
+
+    <!-- actions -->
+    <div class="hub-actions">
+      <button class="btn-start" id="btn-start"><span class="play">▶</span><span data-i="start">Start Adventure</span></button>
+      <div class="hub-sub-actions">
+        <button class="btn-sub" id="btn-continue"><span class="ic">↺</span> <span data-i="continue">Continue</span></button>
+        <button class="btn-sub" id="btn-worldselect"><span class="ic">🌐</span> <span data-i="worldselect">World Select</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- worlds -->
+  <div class="hub-worlds">
+    <div class="worlds-label"><span class="globe">🌐</span><span class="txt" data-i="worlds">Worlds</span></div>
+    <div class="worlds-track" id="worlds-track"></div>
+    <button class="worlds-next" id="worlds-next" aria-label="더 보기">›</button>
+  </div>
+</main>
+
+<!-- ═══════════════ GAME ═══════════════ -->
+<section id="game" class="hidden" role="application" aria-label="ShapeCraft 게임 플레이">
+  <header id="game-top">
+    <div class="g-left">
+      <button class="btn-back" id="btn-back">‹ <span data-i="hub">메인</span></button>
+      <span id="game-world-name">Shape Forest</span>
+    </div>
+    <div class="g-right">
+      <span id="g-score">⭐ 0</span>
       <button class="btn-sm" id="btn-lang" aria-label="언어 전환">🌐 KO</button>
       <button class="btn-sm" id="btn-tts" aria-label="음성 안내 켜기/끄기">🔊 TTS</button>
       <button class="btn-sm" id="btn-hint" aria-label="힌트">💡 <span data-i="hint">힌트</span></button>
     </div>
   </header>
 
-  <!-- Game area -->
   <div id="game-area">
     <div id="canvas-wrap" tabindex="0" role="img" aria-label="게임 화면" aria-describedby="a11y-live">
       <canvas id="game-canvas"></canvas>
-
-      <!-- Bottom bar (tactile + dpad) -->
       <div id="bottom-bar">
-        <div id="tactile-wrap">
-          <div class="tactile-label" data-i="tactile-label">촉각 매트릭스 (60×40)</div>
+        <div class="tactile-wrap">
+          <div class="tactile-lbl" data-i="tactile">촉각 매트릭스 60×40</div>
           <canvas id="tactile-canvas" width="180" height="120" aria-hidden="true"></canvas>
         </div>
-        <div id="dpad" aria-label="방향 버튼">
-          <button class="dpad-btn" id="dpad-up" aria-label="위(북쪽)">↑</button>
-          <button class="dpad-btn" id="dpad-left" aria-label="왼쪽(서쪽)">←</button>
-          <button class="dpad-btn" id="dpad-center" aria-label="행동">●</button>
-          <button class="dpad-btn" id="dpad-right" aria-label="오른쪽(동쪽)">→</button>
+        <div class="panning">
+          <div class="panning-lbl" data-i="panning">Dot Pad 패닝키</div>
+          <div class="panning-keys" aria-label="방향 패닝키">
+            <button class="pan-btn pan-up" id="pan-up" aria-label="위로 이동">↑</button>
+            <button class="pan-btn pan-left" id="pan-left" aria-label="왼쪽 이동">←</button>
+            <button class="pan-btn pan-act" id="pan-act" aria-label="읽기">●</button>
+            <button class="pan-btn pan-right" id="pan-right" aria-label="오른쪽 이동">→</button>
+            <button class="pan-btn pan-down" id="pan-down" aria-label="아래로 이동" style="grid-column:2;grid-row:3;">↓</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Right panel -->
     <aside id="side-right" aria-label="게임 정보">
-      <div class="panel-section">
-        <div class="panel-label" data-i="position">위치</div>
+      <div class="panel-sec">
+        <div class="panel-lbl" data-i="position">현재 위치</div>
         <div id="hud-pos">—</div>
         <div id="hud-facing">—</div>
         <div id="hud-nearby" aria-live="polite"></div>
       </div>
-      <div class="panel-section">
-        <div class="panel-label" data-i="challenge">오늘의 과제</div>
+      <div class="panel-sec">
+        <div class="panel-lbl" data-i="challenge">오늘의 과제</div>
         <div id="challenge-text">—</div>
         <div id="challenge-progress"></div>
       </div>
-      <div class="panel-section">
-        <div class="panel-label" data-i="tts-last">마지막 안내</div>
-        <div id="tts-text" aria-live="polite" aria-atomic="false">—</div>
+      <div class="panel-sec">
+        <div class="panel-lbl" data-i="lastmsg">마지막 안내</div>
+        <div id="tts-text" aria-live="polite">—</div>
       </div>
     </aside>
   </div>
-</div>
+</section>
 
-<!-- Intro modal -->
-<div class="modal-overlay" id="intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-title">
-  <div class="modal-card">
-    <div class="modal-kicker" id="intro-kicker">Level 1</div>
-    <h1 class="modal-title" id="intro-title"><span id="intro-title-text">도형 세계</span></h1>
+<!-- intro modal -->
+<div class="overlay hidden" id="intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+  <div class="modal">
+    <div class="modal-kicker" id="intro-kicker">World 1</div>
+    <h1 class="modal-title" id="intro-title-text">Shape Forest</h1>
     <p class="modal-body" id="intro-body">—</p>
-    <div class="shape-legend" id="intro-legend"></div>
+    <div class="legend" id="intro-legend"></div>
     <div class="key-guide">
       <div class="key-chip"><kbd>↑↓←→</kbd> / <kbd>WASD</kbd> 이동</div>
-      <div class="key-chip"><kbd>Space</kbd> / <kbd>Enter</kbd> 행동·읽기</div>
+      <div class="key-chip"><kbd>Space</kbd> 읽기</div>
       <div class="key-chip"><kbd>H</kbd> 힌트</div>
-      <div class="key-chip"><kbd>R</kbd> 반복 TTS</div>
+      <div class="key-chip"><kbd>R</kbd> 반복</div>
     </div>
-    <button class="btn-primary" id="btn-start" autofocus>
-      <span data-i="start">탐험 시작!</span>
-    </button>
+    <button class="btn-primary" id="btn-enter"><span data-i="enter">탐험 시작!</span></button>
   </div>
 </div>
 
-<!-- Success modal -->
-<div class="modal-overlay" id="success-modal" hidden role="dialog" aria-modal="true" aria-labelledby="success-title">
-  <div class="modal-card">
+<!-- success modal -->
+<div class="overlay hidden" id="success-modal" role="dialog" aria-modal="true" aria-labelledby="success-title">
+  <div class="modal">
     <div id="success-stars">⭐⭐⭐</div>
-    <div class="modal-kicker" data-i="level-clear">레벨 클리어!</div>
-    <h2 class="modal-title" id="success-title"><span id="success-title-text">도형 세계 완료!</span></h2>
+    <div class="modal-kicker" data-i="clear">World Clear!</div>
+    <h2 class="modal-title" id="success-title-text">—</h2>
     <p class="modal-body" id="success-body">—</p>
     <div class="modal-actions">
-      <button class="btn-primary" id="btn-next"><span data-i="next-level">다음 레벨</span> →</button>
+      <button class="btn-primary" id="btn-next"><span data-i="next">다음 월드</span> →</button>
       <button class="btn-sm" id="btn-replay"><span data-i="replay">다시 하기</span></button>
+      <button class="btn-sm" id="btn-tohub"><span data-i="tohub">메인으로</span></button>
     </div>
   </div>
 </div>
 
-<!-- ARIA live region -->
+<!-- world select modal -->
+<div class="overlay hidden" id="ws-modal" role="dialog" aria-modal="true" aria-labelledby="ws-title">
+  <div class="modal">
+    <div class="modal-kicker">World Select</div>
+    <h2 class="modal-title" id="ws-title" data-i="selectworld">월드 선택</h2>
+    <div class="ws-grid" id="ws-grid"></div>
+    <button class="btn-sm" id="btn-ws-close" style="justify-self:start"><span data-i="close">닫기</span></button>
+  </div>
+</div>
+
 <div id="a11y-live" aria-live="assertive" aria-atomic="true" role="status"></div>
 
 <script>
 'use strict';
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CONFIG
-// ═══════════════════════════════════════════════════════════════════════════════
-const CELL_SIZE = 52; // px per grid cell
-const DOT_W = 60, DOT_H = 40; // Dot Pad dimensions
-
-// Cell types
-const C = {
-  EMPTY: 0, WALL: 1, START: 2, GOAL: 3,
-  TRIANGLE: 4, SQUARE: 5, CIRCLE: 6, HEXAGON: 7, STAR: 8,
-  N1: 11, N2: 12, N3: 13, N4: 14, N5: 15,
-  PA: 21, PB: 22, BLANK: 23,
-};
+// ═══════════════════════════════════════════════════════════════════
+// CONFIG & DATA
+// ═══════════════════════════════════════════════════════════════════
+const CELL_SIZE = 52, DOT_W = 60, DOT_H = 40;
+const C = { EMPTY:0, WALL:1, START:2, GOAL:3,
+  TRIANGLE:4, SQUARE:5, CIRCLE:6, HEXAGON:7, STAR:8,
+  N1:11, N2:12, N3:13, N4:14, N5:15, PA:21, PB:22, BLANK:23 };
 
 const DIR = [
-  { name: { ko: '북쪽', en: 'North' }, dr: -1, dc: 0, arrow: '↑' },
-  { name: { ko: '동쪽', en: 'East'  }, dr:  0, dc: 1, arrow: '→' },
-  { name: { ko: '남쪽', en: 'South' }, dr:  1, dc: 0, arrow: '↓' },
-  { name: { ko: '서쪽', en: 'West'  }, dr:  0, dc: -1, arrow: '←' },
+  { dr:-1, dc:0, arrow:'↑' }, { dr:0, dc:1, arrow:'→' },
+  { dr:1, dc:0, arrow:'↓' }, { dr:0, dc:-1, arrow:'←' },
 ];
 
 const SHAPE_INFO = {
-  [C.TRIANGLE]: {
-    emoji: '▲',
-    ko: { name: '삼각형', desc: '꼭짓점이 3개, 변이 3개인 도형이에요.', article: '삼각형은' },
-    en: { name: 'Triangle', desc: 'A shape with 3 corners and 3 sides.', article: 'A triangle has' },
-    color: '#ffc84a', freq: 523, wave: 'triangle',
-    dotPattern: [[1,0,1],[0,1,0],[1,1,1]], // 3×3 tactile pattern
-  },
-  [C.SQUARE]: {
-    emoji: '■',
-    ko: { name: '사각형', desc: '꼭짓점이 4개, 변이 4개인 도형이에요.', article: '사각형은' },
-    en: { name: 'Square', desc: 'A shape with 4 corners and 4 sides.', article: 'A square has' },
-    color: '#4cd8ff', freq: 392, wave: 'square',
-    dotPattern: [[1,1,1],[1,0,1],[1,1,1]],
-  },
-  [C.CIRCLE]: {
-    emoji: '●',
-    ko: { name: '원', desc: '꼭짓점이 없고, 동그란 도형이에요.', article: '원은' },
-    en: { name: 'Circle', desc: 'A round shape with no corners.', article: 'A circle has' },
-    color: '#ff8af5', freq: 440, wave: 'sine',
-    dotPattern: [[0,1,0],[1,0,1],[0,1,0]],
-  },
-  [C.HEXAGON]: {
-    emoji: '⬡',
-    ko: { name: '육각형', desc: '꼭짓점이 6개, 변이 6개인 도형이에요.', article: '육각형은' },
-    en: { name: 'Hexagon', desc: 'A shape with 6 corners and 6 sides.', article: 'A hexagon has' },
-    color: '#5effa0', freq: 349, wave: 'sawtooth',
-    dotPattern: [[0,1,0],[1,0,1],[0,1,0]],
-  },
-  [C.STAR]: {
-    emoji: '★',
-    ko: { name: '별', desc: '뾰족한 꼭짓점이 5개인 특별한 도형이에요!', article: '별은' },
-    en: { name: 'Star', desc: 'A special shape with 5 pointed corners!', article: 'A star has' },
-    color: '#ffdd55', freq: 587, wave: 'triangle',
-    dotPattern: [[1,0,1],[0,1,0],[1,0,1]],
-  },
+  [C.TRIANGLE]:{ emoji:'▲', ko:{name:'삼각형',desc:'꼭짓점 3개, 변 3개'}, en:{name:'Triangle',desc:'3 corners, 3 sides'}, color:'#5effa0', freq:523, wave:'triangle', dot:[[0,1,0],[1,0,1],[1,1,1]] },
+  [C.SQUARE]:{ emoji:'■', ko:{name:'사각형',desc:'꼭짓점 4개, 변 4개'}, en:{name:'Square',desc:'4 corners, 4 sides'}, color:'#ffc84a', freq:392, wave:'square', dot:[[1,1,1],[1,0,1],[1,1,1]] },
+  [C.CIRCLE]:{ emoji:'●', ko:{name:'원',desc:'꼭짓점 없는 동그라미'}, en:{name:'Circle',desc:'round, no corners'}, color:'#3ad1ff', freq:440, wave:'sine', dot:[[0,1,0],[1,0,1],[0,1,0]] },
+  [C.HEXAGON]:{ emoji:'⬡', ko:{name:'육각형',desc:'꼭짓점 6개, 변 6개'}, en:{name:'Hexagon',desc:'6 corners, 6 sides'}, color:'#a855f7', freq:349, wave:'sawtooth', dot:[[1,1,1],[1,0,1],[1,1,1]] },
+  [C.STAR]:{ emoji:'★', ko:{name:'별',desc:'뾰족한 꼭짓점 5개'}, en:{name:'Star',desc:'5 pointed corners'}, color:'#ffdd55', freq:587, wave:'triangle', dot:[[1,0,1],[0,1,0],[1,0,1]] },
 };
-
 const NUMBER_INFO = {
-  [C.N1]: { num: 1, emoji: '①', ko: '숫자 1', en: 'Number 1' },
-  [C.N2]: { num: 2, emoji: '②', ko: '숫자 2', en: 'Number 2' },
-  [C.N3]: { num: 3, emoji: '③', ko: '숫자 3', en: 'Number 3' },
-  [C.N4]: { num: 4, emoji: '④', ko: '숫자 4', en: 'Number 4' },
-  [C.N5]: { num: 5, emoji: '⑤', ko: '숫자 5', en: 'Number 5' },
+  [C.N1]:{num:1,emoji:'①',ko:'숫자 1',en:'Number 1'}, [C.N2]:{num:2,emoji:'②',ko:'숫자 2',en:'Number 2'},
+  [C.N3]:{num:3,emoji:'③',ko:'숫자 3',en:'Number 3'}, [C.N4]:{num:4,emoji:'④',ko:'숫자 4',en:'Number 4'},
+  [C.N5]:{num:5,emoji:'⑤',ko:'숫자 5',en:'Number 5'},
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// LEVEL DATA
-// ═══════════════════════════════════════════════════════════════════════════════
-const LEVELS = [
-  // ── Level 1: 도형 탐험 ──────────────────────────────────────────────────────
+const WORLDS = [
   {
-    id: 1,
-    title: { ko: '도형 세계', en: 'Shape World' },
-    kicker: { ko: 'Level 1', en: 'Level 1' },
-    intro: {
-      ko: '다섯 가지 도형이 숨어 있어요! 소리를 따라가면 도형을 찾을 수 있어요. 모든 도형을 만나고 출구로 가세요.',
-      en: 'Five shapes are hiding! Follow the sounds to find them. Meet all shapes and reach the exit.',
-    },
-    theme: { bg: '#060914', wallColor: '#1a2548', pathColor: '#0a1020', accentColor: '#4cd8ff' },
-    audioTheme: { base: 440, ambient: 'sine' },
-    objective: {
-      type: 'collect_shapes',
-      targets: [C.TRIANGLE, C.SQUARE, C.CIRCLE, C.HEXAGON, C.STAR],
-      description: { ko: '다섯 가지 도형을 모두 만나세요!', en: 'Find all five shapes!' },
-    },
-    grid: [
+    id:1, max:30, thumb:'#1f5c33',
+    title:{ko:'도형 숲', en:'Shape Forest'}, kicker:'World 1',
+    intro:{ko:'다섯 가지 도형이 숲에 숨어 있어요! 소리를 따라가 도형을 모두 만나고 빛나는 문으로 가세요.',
+           en:'Five shapes hide in the forest! Follow the sounds, meet them all, and reach the glowing gate.'},
+    theme:{wall:'#1a3a24', path:'#0a1a10', accent:'#5effa0'},
+    objective:{type:'collect_shapes', targets:[C.TRIANGLE,C.SQUARE,C.CIRCLE,C.HEXAGON,C.STAR],
+      description:{ko:'다섯 가지 도형을 모두 만나세요!', en:'Find all five shapes!'}},
+    legend:[{t:C.TRIANGLE},{t:C.SQUARE},{t:C.CIRCLE},{t:C.HEXAGON},{t:C.STAR}],
+    success:{ko:'훌륭해요! 도형 박사가 됐어요! 🎉', en:'Amazing! You are a shape expert! 🎉'},
+    grid:[
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
       [1,2,0,0,1,0,0,0,1,0,0,0,4,0,0,0,1],
       [1,0,1,0,1,0,1,0,0,0,1,0,1,0,1,0,1],
@@ -392,33 +508,18 @@ const LEVELS = [
       [1,0,1,0,0,0,1,8,0,0,0,0,1,0,3,0,1],
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     ],
-    legend: [
-      { type: C.TRIANGLE }, { type: C.SQUARE },
-      { type: C.CIRCLE }, { type: C.HEXAGON }, { type: C.STAR },
-    ],
-    successMsg: {
-      ko: '훌륭해요! 다섯 가지 도형을 모두 만났어요. 이제 도형 박사가 됐어요! 🎉',
-      en: 'Amazing! You met all five shapes. You\'re a shape expert now! 🎉',
-    },
   },
-
-  // ── Level 2: 수 세기 ────────────────────────────────────────────────────────
   {
-    id: 2,
-    title: { ko: '숫자 길', en: 'Number Path' },
-    kicker: { ko: 'Level 2', en: 'Level 2' },
-    intro: {
-      ko: '1부터 5까지 숫자 블록이 있어요! 1, 2, 3, 4, 5 순서대로 밟아야 해요. 소리가 올바른 숫자 방향으로 안내해 줄 거예요!',
-      en: 'Number blocks from 1 to 5 are hidden! Step on them in order: 1, 2, 3, 4, 5. Sound will guide you to the right number!',
-    },
-    theme: { bg: '#060914', wallColor: '#1e1840', pathColor: '#0c0a1e', accentColor: '#a78bfa' },
-    audioTheme: { base: 330, ambient: 'triangle' },
-    objective: {
-      type: 'sequence_numbers',
-      targets: [C.N1, C.N2, C.N3, C.N4, C.N5],
-      description: { ko: '1→2→3→4→5 순서로 밟으세요!', en: 'Step in order: 1→2→3→4→5!' },
-    },
-    grid: [
+    id:2, max:24, thumb:'#3a3560',
+    title:{ko:'꼭짓점 성', en:'Corner Castle'}, kicker:'World 2',
+    intro:{ko:'성 안의 숫자 블록을 1, 2, 3, 4, 5 순서대로 밟아요! 소리가 다음 숫자 방향을 알려줄 거예요.',
+           en:'Step on the number blocks in order: 1, 2, 3, 4, 5! Sound guides you to the next number.'},
+    theme:{wall:'#2a2452', path:'#120e2a', accent:'#a855f7'},
+    objective:{type:'sequence_numbers', targets:[C.N1,C.N2,C.N3,C.N4,C.N5],
+      description:{ko:'1→2→3→4→5 순서로 밟으세요!', en:'Step in order: 1→2→3→4→5!'}},
+    legend:[{t:C.N1},{t:C.N2},{t:C.N3},{t:C.N4},{t:C.N5}],
+    success:{ko:'완벽해요! 수 세기 왕이 됐어요! 🔢', en:'Perfect! Counting champion! 🔢'},
+    grid:[
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
       [1,2,0,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
       [1,0,1,1,0,11,1,0,1,0,1,0,1,0,1,0,1],
@@ -433,1213 +534,681 @@ const LEVELS = [
       [1,0,0,0,0,0,0,0,0,0,1,15,1,0,3,0,1],
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     ],
-    legend: [
-      { type: C.N1 }, { type: C.N2 }, { type: C.N3 }, { type: C.N4 }, { type: C.N5 },
-    ],
-    successMsg: {
-      ko: '완벽해요! 1부터 5까지 순서대로 모두 밟았어요. 수 세기 왕이 됐어요! 🔢',
-      en: 'Perfect! You stepped on 1 through 5 in order. You\'re a counting champion! 🔢',
-    },
   },
-
-  // ── Level 3: 패턴 완성 ──────────────────────────────────────────────────────
   {
-    id: 3,
-    title: { ko: '패턴 세계', en: 'Pattern World' },
-    kicker: { ko: 'Level 3', en: 'Level 3' },
-    intro: {
-      ko: '도형 패턴의 빈칸을 채워요! 삼각형, 원이 반복되는 패턴에서 빠진 도형을 찾아보세요. 빈칸(?)에 올바른 도형을 소리로 선택하세요.',
-      en: 'Complete the shape patterns! Find the missing shape in the repeating pattern. Use sound to choose the right shape for the blank.',
-    },
-    theme: { bg: '#060914', wallColor: '#1a3020', pathColor: '#0a180e', accentColor: '#5effa0' },
-    audioTheme: { base: 528, ambient: 'sine' },
-    objective: {
-      type: 'fill_patterns',
-      blanks: 4,
-      description: { ko: '패턴의 빈칸 4개를 모두 채우세요!', en: 'Fill all 4 pattern blanks!' },
-    },
-    grid: [
+    id:3, max:30, thumb:'#3a1f55',
+    title:{ko:'메아리 동굴', en:'Echo Cave'}, kicker:'World 3',
+    intro:{ko:'깜깜한 동굴이에요. 눈이 아닌 귀로 길을 찾아요! 출구에서 울리는 소리를 따라가세요. 가까워질수록 소리가 빨라져요.',
+           en:'A dark cave. Find your way by ear, not eye! Follow the beacon from the exit — it pulses faster as you get closer.'},
+    theme:{wall:'#241640', path:'#0c0820', accent:'#7c3aed', dark:true},
+    objective:{type:'echo_navigate',
+      description:{ko:'소리를 따라 출구를 찾으세요!', en:'Follow the sound to the exit!'}},
+    legend:[{t:C.GOAL}],
+    success:{ko:'대단해요! 소리로 길을 찾았어요! 🦇', en:'Incredible! You found your way by sound! 🦇'},
+    grid:[
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,2,0,1,0,0,0,1,0,0,0,0,1,0,0,0,1],
+      [1,0,0,1,0,1,0,1,0,1,1,0,1,0,1,0,1],
+      [1,1,0,0,0,1,0,0,0,1,0,0,0,0,1,0,1],
+      [1,0,0,1,1,1,1,1,0,1,0,1,1,1,1,0,1],
+      [1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,0,1],
+      [1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,1],
+      [1,1,1,0,1,0,1,1,1,1,1,1,1,0,1,0,1],
+      [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1],
+      [1,0,1,1,1,1,1,0,1,1,1,0,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,3,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+  },
+  {
+    id:4, max:30, thumb:'#5c4a1f',
+    title:{ko:'패턴 사원', en:'Pattern Temple'}, kicker:'World 4',
+    intro:{ko:'도형 패턴의 빈칸(?)을 채워요! 삼각형과 원이 반복되는 규칙을 듣고, 빈칸에서 Space를 눌러 정답 도형을 선택하세요.',
+           en:'Complete the shape patterns! Listen to the repeating rule of triangle and circle, then press Space on a blank to choose the right shape.'},
+    theme:{wall:'#4a3a18', path:'#1a1408', accent:'#ffc84a'},
+    objective:{type:'fill_patterns', blanks:4,
+      description:{ko:'패턴의 빈칸 4개를 채우세요!', en:'Fill all 4 pattern blanks!'}},
+    legend:[{t:C.TRIANGLE},{t:C.CIRCLE},{t:C.BLANK}],
+    success:{ko:'대단해요! 수학 탐험가가 됐어요! 🌟', en:'Amazing! You are a math explorer! 🌟'},
+    grid:[
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
       [1,2,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
       [1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1],
-      [1,4,0,21,0,22,0,23,1,4,0,21,0,22,0,23,1],
+      [1,4,0,6,0,4,0,23,1,4,0,6,0,4,0,23,1],
       [1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1],
       [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
       [1,1,1,0,1,1,1,1,1,1,1,1,0,1,1,1,1],
       [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
       [1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1],
-      [1,6,0,21,0,22,0,23,1,6,0,22,0,21,0,23,1],
+      [1,6,0,4,0,6,0,23,1,6,0,4,0,6,0,23,1],
       [1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1],
       [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,3,1],
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     ],
-    legend: [
-      { type: C.TRIANGLE }, { type: C.CIRCLE },
-      { type: C.PA }, { type: C.BLANK },
-    ],
-    // Pattern sequences define what PA=TRIANGLE, PB=CIRCLE, BLANK=missing
-    patterns: [
-      { seq: [C.TRIANGLE, C.CIRCLE, C.TRIANGLE, C.CIRCLE], answer: C.CIRCLE }, // BLANK at pos 3
-    ],
-    successMsg: {
-      ko: '대단해요! 패턴을 모두 완성했어요. 수학 탐험가가 됐어요! 🌟',
-      en: 'Amazing! You completed all patterns. You\'re a math explorer! 🌟',
-    },
+    patternAnswer:{ '3,7':C.SQUARE, '3,15':C.SQUARE, '9,7':C.SQUARE, '9,15':C.SQUARE },
   },
 ];
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 // I18N
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 let lang = 'ko';
 const T = {
-  ko: {
-    hint: '힌트', start: '탐험 시작!', 'next-level': '다음 레벨',
-    replay: '다시 하기', 'level-clear': '레벨 클리어!',
-    position: '현재 위치', challenge: '오늘의 과제', 'tts-last': '마지막 안내',
-    'tactile-label': '촉각 매트릭스 (60×40)',
-    wall: '벽이에요!', goal: '출구예요! 모든 도형을 모았나요?',
-    'goal-open': '출구예요! 출구로 들어가세요!',
-    move: (dir) => `${dir} 이동`,
-    collected: (name) => `${name}을(를) 만났어요!`,
-    'already-collected': (name) => `${name}은(는) 이미 만났어요.`,
-    'need-shapes': (n) => `아직 도형이 ${n}개 더 남았어요!`,
-    facing: (dir) => `${dir} 방향`,
-    nearby: (name, dist) => `${dist}칸 앞에 ${name}이(가) 있어요.`,
-    hint_msg: (name, dr, dc) => {
-      const d = dr < 0 ? '북쪽' : dr > 0 ? '남쪽' : dc < 0 ? '서쪽' : '동쪽';
-      return `힌트: ${name}이(가) ${d}에 있어요!`;
-    },
-    number_step: (n, next) => `숫자 ${n}! 다음은 숫자 ${next}을(를) 찾으세요.`,
-    number_done: '숫자 다 밟았어요!',
-    number_wrong: (n, exp) => `순서가 달라요. 지금은 숫자 ${exp}을(를) 먼저 찾아야 해요!`,
-    pattern_blank: '빈칸이에요! Space를 누르면 도형을 선택해요.',
-    pattern_correct: '정답! 패턴을 맞췄어요!',
-    pattern_wrong: '틀렸어요. 다시 생각해 보세요!',
-    directions: ['북쪽', '동쪽', '남쪽', '서쪽'],
+  ko:{
+    tagline:'소리와 촉각, 음성으로 도형을 탐험해요.', level:'레벨', stars:'별', stars2:'별', badges:'뱃지',
+    mission:'오늘의 미션', reward:'보상', start:'모험 시작!', continue:'이어하기', worldselect:'월드 선택',
+    worlds:'월드', hub:'메인', hint:'힌트', position:'현재 위치', challenge:'오늘의 과제', lastmsg:'마지막 안내',
+    tactile:'촉각 매트릭스 60×40', panning:'Dot Pad 패닝키', enter:'탐험 시작!', clear:'월드 클리어!',
+    next:'다음 월드', replay:'다시 하기', tohub:'메인으로', selectworld:'월드 선택', close:'닫기',
+    locked:'잠김', wall:'벽이에요!', goalOpen:'출구예요! 들어가세요!',
+    needMore:(n)=>`아직 ${n}개 더 남았어요!`,
+    found:(name)=>`${name}을(를) 만났어요!`, facing:(d)=>`${d} 방향`,
+    near:(name)=>`바로 앞에 ${name}이(가) 있어요.`,
+    hintMsg:(name,dr,dc)=>{const d=dr<0?'북쪽':dr>0?'남쪽':dc<0?'서쪽':'동쪽';return `힌트: ${name}이(가) ${d}에 있어요!`;},
+    numStep:(n,nx)=>`숫자 ${n}! 다음은 ${nx}을(를) 찾으세요.`, numDone:'숫자를 모두 밟았어요!',
+    numWrong:(exp)=>`순서가 달라요. 숫자 ${exp}을(를) 먼저 찾으세요!`,
+    blank:'빈칸이에요! Space를 누르면 도형을 골라요.',
+    patOk:'정답! 패턴을 맞췄어요!', patNo:'아니에요. 다시 생각해 보세요!',
+    echoNear:(n)=>`출구가 ${n}칸 거리예요.`, echoHint:'출구 방향으로 소리가 울려요!',
+    dirs:['북쪽','동쪽','남쪽','서쪽'], exit:'출구', blankName:'빈칸',
+    choosing:(name)=>`${name}? Space로 바꾸고, 한 번 더 누르면 선택해요.`,
   },
-  en: {
-    hint: 'Hint', start: 'Start!', 'next-level': 'Next Level',
-    replay: 'Retry', 'level-clear': 'Level Clear!',
-    position: 'Position', challenge: 'Challenge', 'tts-last': 'Last message',
-    'tactile-label': 'Tactile Matrix (60×40)',
-    wall: 'Wall!', goal: 'Exit! Have you found all shapes?',
-    'goal-open': 'Exit! Go through the exit!',
-    move: (dir) => `Move ${dir}`,
-    collected: (name) => `Found a ${name}!`,
-    'already-collected': (name) => `You already found the ${name}.`,
-    'need-shapes': (n) => `${n} more shape${n > 1 ? 's' : ''} to find!`,
-    facing: (dir) => `Facing ${dir}`,
-    nearby: (name, dist) => `${name} is ${dist} step${dist > 1 ? 's' : ''} ahead.`,
-    hint_msg: (name, dr, dc) => {
-      const d = dr < 0 ? 'North' : dr > 0 ? 'South' : dc < 0 ? 'West' : 'East';
-      return `Hint: ${name} is to the ${d}!`;
-    },
-    number_step: (n, next) => `Number ${n}! Now find number ${next}.`,
-    number_done: 'All numbers stepped!',
-    number_wrong: (n, exp) => `Wrong order. You need number ${exp} first!`,
-    pattern_blank: 'Blank! Press Space to choose a shape.',
-    pattern_correct: 'Correct! Pattern complete!',
-    pattern_wrong: 'Wrong! Try again.',
-    directions: ['North', 'East', 'South', 'West'],
+  en:{
+    tagline:'Explore shapes with sound, touch, and voice.', level:'Level', stars:'Stars', stars2:'Stars', badges:'Badges',
+    mission:"Today's Mission", reward:'Reward', start:'Start Adventure', continue:'Continue', worldselect:'World Select',
+    worlds:'Worlds', hub:'Home', hint:'Hint', position:'Position', challenge:'Challenge', lastmsg:'Last message',
+    tactile:'Tactile Matrix 60×40', panning:'Dot Pad Keys', enter:'Start!', clear:'World Clear!',
+    next:'Next World', replay:'Retry', tohub:'Home', selectworld:'Select World', close:'Close',
+    locked:'Locked', wall:'Wall!', goalOpen:'Exit! Go through!',
+    needMore:(n)=>`${n} more to go!`,
+    found:(name)=>`Found a ${name}!`, facing:(d)=>`Facing ${d}`,
+    near:(name)=>`A ${name} is right ahead.`,
+    hintMsg:(name,dr,dc)=>{const d=dr<0?'North':dr>0?'South':dc<0?'West':'East';return `Hint: ${name} is to the ${d}!`;},
+    numStep:(n,nx)=>`Number ${n}! Now find ${nx}.`, numDone:'All numbers stepped!',
+    numWrong:(exp)=>`Wrong order. Find number ${exp} first!`,
+    blank:'Blank! Press Space to choose a shape.',
+    patOk:'Correct! Pattern complete!', patNo:'Not quite. Try again!',
+    echoNear:(n)=>`Exit is ${n} steps away.`, echoHint:'The exit echoes toward you!',
+    dirs:['North','East','South','West'], exit:'Exit', blankName:'Blank',
+    choosing:(name)=>`${name}? Space to change, press again to choose.`,
   },
 };
-const t = (key, ...args) => {
-  const val = T[lang][key];
-  return typeof val === 'function' ? val(...args) : (val || key);
-};
+const t = (k,...a)=>{const v=T[lang][k];return typeof v==='function'?v(...a):(v||k);};
+const nameOf = (cell)=>{const s=SHAPE_INFO[cell],n=NUMBER_INFO[cell];
+  return s?(lang==='ko'?s.ko.name:s.en.name):n?(lang==='ko'?n.ko:n.en):cell===C.GOAL?t('exit'):t('blankName');};
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 // AUDIO ENGINE
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 class AudioEngine {
-  constructor() {
-    this._ctx = null;
-    this._enabled = true;
+  constructor(){ this._ctx=null; this._on=true; }
+  get ctx(){ if(!this._ctx) this._ctx=new (window.AudioContext||window.webkitAudioContext)(); return this._ctx; }
+  resume(){ if(this._ctx&&this._ctx.state==='suspended') this._ctx.resume(); }
+  _osc(freq,type,dur,pan=0,vol=.22,atk=.01){
+    if(!this._on) return;
+    try{ const ctx=this.ctx, o=ctx.createOscillator(), g=ctx.createGain(), p=ctx.createStereoPanner();
+      o.type=type; o.frequency.setValueAtTime(freq,ctx.currentTime);
+      g.gain.setValueAtTime(0,ctx.currentTime); g.gain.linearRampToValueAtTime(vol,ctx.currentTime+atk);
+      g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+dur);
+      p.pan.setValueAtTime(Math.max(-1,Math.min(1,pan)),ctx.currentTime);
+      o.connect(g); g.connect(p); p.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime+dur+.05);
+    }catch(e){}
   }
-
-  get ctx() {
-    if (!this._ctx) {
-      this._ctx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    return this._ctx;
-  }
-
-  resume() {
-    if (this._ctx && this._ctx.state === 'suspended') this._ctx.resume();
-  }
-
-  _playOsc(freq, type, duration, pan = 0, vol = 0.22, attack = 0.01, decay = 0.08) {
-    if (!this._enabled) return;
-    try {
-      const ctx = this.ctx;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const panner = ctx.createStereoPanner();
-
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, ctx.currentTime);
-      gain.gain.setValueAtTime(0, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + attack);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-      panner.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), ctx.currentTime);
-
-      osc.connect(gain);
-      gain.connect(panner);
-      panner.connect(ctx.destination);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + duration + 0.05);
-    } catch (e) { /* audio context suspended or unavailable */ }
-  }
-
-  playMove(pan = 0) {
-    this._playOsc(800, 'sine', 0.07, pan, 0.08);
-  }
-
-  playWall() {
-    this._playOsc(90, 'sawtooth', 0.12, 0, 0.18);
-    this._playOsc(70, 'square', 0.1, 0, 0.12);
-  }
-
-  playShape(cellType, pan = 0) {
-    const info = SHAPE_INFO[cellType];
-    if (!info) return;
-    this._playOsc(info.freq, info.wave, 0.5, pan, 0.28);
-    setTimeout(() => this._playOsc(info.freq * 1.5, 'sine', 0.3, pan, 0.12), 120);
-  }
-
-  playCollect(cellType) {
-    const info = SHAPE_INFO[cellType];
-    const base = info ? info.freq : 440;
-    const ratios = [1, 1.25, 1.5, 2];
-    ratios.forEach((r, i) => {
-      setTimeout(() => this._playOsc(base * r, 'sine', 0.3, 0, 0.2), i * 80);
-    });
-  }
-
-  playNumber(n, pan = 0) {
-    const freqs = [0, 261, 294, 329, 349, 392];
-    this._playOsc(freqs[n] || 400, 'triangle', 0.4, pan, 0.22);
-  }
-
-  playGoalOpen() {
-    const melody = [523, 659, 784, 1047];
-    melody.forEach((f, i) => setTimeout(() => this._playOsc(f, 'sine', 0.4, 0, 0.2), i * 100));
-  }
-
-  playGoalBlocked() {
-    this._playOsc(200, 'sawtooth', 0.3, 0, 0.16);
-  }
-
-  playSuccess() {
-    const melody = [523, 659, 784, 659, 784, 1047];
-    melody.forEach((f, i) => setTimeout(() => this._playOsc(f, 'sine', 0.5, 0, 0.22), i * 130));
-  }
-
-  playHint(pan = 0) {
-    this._playOsc(880, 'sine', 0.15, pan, 0.16);
-    setTimeout(() => this._playOsc(1108, 'sine', 0.15, pan, 0.12), 120);
-  }
-
-  playPatternCorrect() {
-    this._playOsc(659, 'sine', 0.3, 0, 0.2);
-    setTimeout(() => this._playOsc(784, 'sine', 0.4, 0, 0.22), 150);
-  }
-
-  playPatternWrong() {
-    this._playOsc(220, 'sawtooth', 0.25, 0, 0.18);
-  }
-
-  // Ambient pulse: distant shape beacon (called when player near shape)
-  playBeacon(cellType, distance, pan) {
-    if (!this._enabled) return;
-    const info = SHAPE_INFO[cellType];
-    if (!info) return;
-    const vol = Math.max(0.02, 0.14 - distance * 0.025);
-    this._playOsc(info.freq * 0.5, 'sine', 0.2, pan, vol, 0.05);
-  }
-
-  setEnabled(v) { this._enabled = v; }
-  toggle() { this._enabled = !this._enabled; return this._enabled; }
+  move(pan=0){ this._osc(800,'sine',.07,pan,.08); }
+  wall(){ this._osc(90,'sawtooth',.12,0,.18); this._osc(70,'square',.1,0,.12); }
+  shape(cell,pan=0){ const i=SHAPE_INFO[cell]; if(!i)return; this._osc(i.freq,i.wave,.5,pan,.28); setTimeout(()=>this._osc(i.freq*1.5,'sine',.3,pan,.12),120); }
+  collect(cell){ const i=SHAPE_INFO[cell],b=i?i.freq:440; [1,1.25,1.5,2].forEach((r,k)=>setTimeout(()=>this._osc(b*r,'sine',.3,0,.2),k*80)); }
+  number(n,pan=0){ const f=[0,261,294,329,349,392]; this._osc(f[n]||400,'triangle',.4,pan,.22); }
+  goalOpen(){ [523,659,784,1047].forEach((f,k)=>setTimeout(()=>this._osc(f,'sine',.4,0,.2),k*100)); }
+  goalBlocked(){ this._osc(200,'sawtooth',.3,0,.16); }
+  success(){ [523,659,784,659,784,1047].forEach((f,k)=>setTimeout(()=>this._osc(f,'sine',.5,0,.22),k*130)); }
+  hint(pan=0){ this._osc(880,'sine',.15,pan,.16); setTimeout(()=>this._osc(1108,'sine',.15,pan,.12),120); }
+  patOk(){ this._osc(659,'sine',.3,0,.2); setTimeout(()=>this._osc(784,'sine',.4,0,.22),150); }
+  patNo(){ this._osc(220,'sawtooth',.25,0,.18); }
+  beacon(cell,dist,pan){ if(!this._on)return; const i=SHAPE_INFO[cell]; const f=i?i.freq*.5:330; const v=Math.max(.02,.14-dist*.02); this._osc(f,'sine',.2,pan,v,.05); }
+  echo(dist,pan){ if(!this._on)return; const v=Math.max(.05,.2-dist*.018); this._osc(330,'sine',.16,pan,v,.02); setTimeout(()=>this._osc(495,'sine',.1,pan,v*.6,.02),60); }
+  setOn(v){ this._on=v; }
+  toggle(){ this._on=!this._on; return this._on; }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 // TTS ENGINE
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 class TTSEngine {
-  constructor() {
-    this._enabled = true;
-    this._queue = [];
-    this._busy = false;
-    this._lastText = '';
+  constructor(){ this._on=true; this._q=[]; this._busy=false; this._last=''; }
+  speak(text,priority=false){ if(!this._on||!text)return;
+    if(priority){ speechSynthesis.cancel(); this._q=[]; this._busy=false; }
+    this._q.push(text); this._flush();
   }
-
-  speak(text, priority = false) {
-    if (!this._enabled || !text) return;
-    if (priority) {
-      speechSynthesis.cancel();
-      this._queue = [];
-      this._busy = false;
-    }
-    this._queue.push(text);
-    this._flush();
+  _flush(){ if(this._busy||!this._q.length)return;
+    const text=this._q.shift(); this._last=text; this._busy=true;
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang=lang==='ko'?'ko-KR':'en-US'; u.rate=.94; u.pitch=1.05;
+    u.onend=u.onerror=()=>{ this._busy=false; this._flush(); };
+    speechSynthesis.speak(u);
+    const el=document.getElementById('tts-text'); if(el) el.textContent=text;
+    const live=document.getElementById('a11y-live'); if(live) live.textContent=text;
   }
-
-  _flush() {
-    if (this._busy || !this._queue.length) return;
-    const text = this._queue.shift();
-    this._lastText = text;
-    this._busy = true;
-
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = lang === 'ko' ? 'ko-KR' : 'en-US';
-    utter.rate = 0.92;
-    utter.pitch = 1.05;
-    utter.onend = utter.onerror = () => { this._busy = false; this._flush(); };
-    speechSynthesis.speak(utter);
-
-    // Update UI
-    const el = document.getElementById('tts-text');
-    if (el) el.textContent = text;
-    const live = document.getElementById('a11y-live');
-    if (live) live.textContent = text;
-  }
-
-  repeat() { if (this._lastText) this.speak(this._lastText, true); }
-  setEnabled(v) { this._enabled = v; if (!v) speechSynthesis.cancel(); }
-  toggle() { this._enabled = !this._enabled; if (!this._enabled) speechSynthesis.cancel(); return this._enabled; }
+  repeat(){ if(this._last) this.speak(this._last,true); }
+  toggle(){ this._on=!this._on; if(!this._on) speechSynthesis.cancel(); return this._on; }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// TACTILE ENGINE
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// TACTILE ENGINE — 60×40 Dot Pad matrix
+// ═══════════════════════════════════════════════════════════════════
 class TactileEngine {
-  constructor() {
-    this._dotPadAdapter = null;
-    this._canvas = document.getElementById('tactile-canvas');
-    this._ctx = this._canvas ? this._canvas.getContext('2d') : null;
-  }
-
-  setAdapter(adapter) { this._dotPadAdapter = adapter; }
-
-  generate(grid, pr, pc) {
-    const rows = grid.length;
-    const cols = grid[0].length;
-    const matrix = Array.from({ length: DOT_H }, () => new Uint8Array(DOT_W));
-    const scaleR = DOT_H / rows;
-    const scaleC = DOT_W / cols;
-
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const cell = grid[r][c];
-        const dr0 = Math.floor(r * scaleR), dr1 = Math.floor((r + 1) * scaleR);
-        const dc0 = Math.floor(c * scaleC), dc1 = Math.floor((c + 1) * scaleC);
-        const pattern = this._cellPattern(cell, r === pr && c === pc);
-
-        for (let dy = dr0; dy < dr1 && dy < DOT_H; dy++) {
-          for (let dx = dc0; dx < dc1 && dx < DOT_W; dx++) {
-            const ly = Math.floor(((dy - dr0) / (dr1 - dr0)) * 3);
-            const lx = Math.floor(((dx - dc0) / (dc1 - dc0)) * 3);
-            matrix[dy][dx] = pattern[ly] ? pattern[ly][lx] || 0 : 0;
-          }
-        }
+  constructor(){ this._adapter=null; this._cv=document.getElementById('tactile-canvas'); this._ctx=this._cv?this._cv.getContext('2d'):null; }
+  setAdapter(a){ this._adapter=a; }
+  generate(grid,pr,pc){
+    const rows=grid.length, cols=grid[0].length;
+    const m=Array.from({length:DOT_H},()=>new Uint8Array(DOT_W));
+    const sR=DOT_H/rows, sC=DOT_W/cols;
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+      const cell=grid[r][c];
+      const r0=Math.floor(r*sR),r1=Math.floor((r+1)*sR),c0=Math.floor(c*sC),c1=Math.floor((c+1)*sC);
+      const pat=this._pat(cell, r===pr&&c===pc);
+      for(let dy=r0;dy<r1&&dy<DOT_H;dy++) for(let dx=c0;dx<c1&&dx<DOT_W;dx++){
+        const ly=Math.floor(((dy-r0)/Math.max(1,r1-r0))*3), lx=Math.floor(((dx-c0)/Math.max(1,c1-c0))*3);
+        m[dy][dx]=pat[ly]?(pat[ly][lx]||0):0;
       }
     }
-    return matrix;
+    return m;
   }
-
-  _cellPattern(cell, isPlayer) {
-    if (isPlayer) return [[0,1,0],[1,1,1],[0,1,0]];
-    if (cell === C.WALL) return [[1,1,1],[1,1,1],[1,1,1]];
-    if (cell === C.GOAL) return [[1,0,1],[0,1,0],[1,0,1]];
-    const si = SHAPE_INFO[cell];
-    if (si) return si.dotPattern;
-    if (cell >= C.N1 && cell <= C.N5) return [[1,1,1],[0,1,0],[0,1,0]];
-    if (cell === C.BLANK) return [[1,0,1],[0,0,0],[1,0,1]];
-    if (cell === C.PA || cell === C.PB) return [[0,1,0],[1,0,1],[0,1,0]];
-    return [[0,0,0],[0,0,0],[0,0,0]]; // empty
+  _pat(cell,player){
+    if(player) return [[0,1,0],[1,1,1],[0,1,0]];
+    if(cell===C.WALL) return [[1,1,1],[1,1,1],[1,1,1]];
+    if(cell===C.GOAL) return [[1,0,1],[0,1,0],[1,0,1]];
+    const s=SHAPE_INFO[cell]; if(s) return s.dot;
+    if(cell>=C.N1&&cell<=C.N5) return [[1,1,1],[0,1,0],[0,1,0]];
+    if(cell===C.BLANK) return [[1,0,1],[0,0,0],[1,0,1]];
+    if(cell===C.PA||cell===C.PB) return [[0,1,0],[1,0,1],[0,1,0]];
+    return [[0,0,0],[0,0,0],[0,0,0]];
   }
-
-  render(matrix) {
-    if (!this._ctx) return;
-    const ctx = this._ctx;
-    const W = this._canvas.width, H = this._canvas.height;
-    const dw = W / DOT_W, dh = H / DOT_H;
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#020509';
-    ctx.fillRect(0, 0, W, H);
-
-    for (let r = 0; r < DOT_H; r++) {
-      for (let c = 0; c < DOT_W; c++) {
-        if (matrix[r][c]) {
-          const x = c * dw, y = r * dh;
-          const radius = Math.min(dw, dh) * 0.38;
-          ctx.beginPath();
-          ctx.arc(x + dw / 2, y + dh / 2, radius, 0, Math.PI * 2);
-          ctx.fillStyle = '#4cd8ff';
-          ctx.shadowColor = '#4cd8ff';
-          ctx.shadowBlur = 2;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        }
-      }
+  render(m){
+    if(!this._ctx)return; const ctx=this._ctx, W=this._cv.width, H=this._cv.height, dw=W/DOT_W, dh=H/DOT_H;
+    ctx.clearRect(0,0,W,H); ctx.fillStyle='#060312'; ctx.fillRect(0,0,W,H);
+    for(let r=0;r<DOT_H;r++) for(let c=0;c<DOT_W;c++) if(m[r][c]){
+      ctx.beginPath(); ctx.arc(c*dw+dw/2,r*dh+dh/2,Math.min(dw,dh)*.38,0,7); ctx.fillStyle='#3ad1ff';
+      ctx.shadowColor='#3ad1ff'; ctx.shadowBlur=2; ctx.fill(); ctx.shadowBlur=0;
     }
   }
-
-  update(grid, pr, pc) {
-    const matrix = this.generate(grid, pr, pc);
-    this.render(matrix);
-    if (this._dotPadAdapter) {
-      try { this._dotPadAdapter.send(matrix); } catch (e) {}
-    }
-  }
+  update(grid,pr,pc){ const m=this.generate(grid,pr,pc); this.render(m); if(this._adapter){try{this._adapter.send(m);}catch(e){}} }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// RENDERER (Canvas 2D visual)
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// RENDERER — Canvas 2D + voxel character
+// ═══════════════════════════════════════════════════════════════════
 class Renderer {
-  constructor(canvas) {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
-    this.cellSize = CELL_SIZE;
-    this._anim = 0;
+  constructor(canvas){ this.canvas=canvas; this.ctx=canvas.getContext('2d'); this.cell=CELL_SIZE; this._tick=0; }
+  resize(cols,rows){ this.canvas.width=cols*this.cell; this.canvas.height=rows*this.cell; this.fit(); }
+  fit(){ const w=document.getElementById('canvas-wrap'); if(!w)return;
+    const s=Math.min(w.clientWidth/this.canvas.width,(w.clientHeight-150)/this.canvas.height,1.4);
+    this.canvas.style.transform=`translate(-50%,-50%) scale(${s})`; }
+  draw(state,tick){
+    this._tick=tick; const {grid,player,theme,collected,obj}=state, ctx=this.ctx, cs=this.cell;
+    ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+    for(let r=0;r<grid.length;r++) for(let c=0;c<grid[r].length;c++)
+      this._cell(ctx,grid[r][c],c*cs,r*cs,cs,theme,collected,obj,tick,r,c);
+    this._voxel(ctx,player.c*cs+cs/2,player.r*cs+cs/2,cs,player.facing,tick);
   }
-
-  resize(cols, rows) {
-    this.canvas.width = cols * this.cellSize;
-    this.canvas.height = rows * this.cellSize;
-    this._fit();
+  _cell(ctx,cell,x,y,cs,theme,collected,obj,tick,r,c){
+    const pulse=(Math.sin(tick*.04)+1)/2;
+    if(cell===C.WALL){ ctx.fillStyle=theme.wall||'#1a2548'; ctx.fillRect(x,y,cs,cs);
+      ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.strokeRect(x+.5,y+.5,cs-1,cs-1); return; }
+    ctx.fillStyle=theme.path||'#0a1020'; ctx.fillRect(x,y,cs,cs);
+    if(theme.dark){ // echo cave: dim non-adjacent cells
+      ctx.fillStyle='rgba(8,5,24,0.55)'; ctx.fillRect(x,y,cs,cs);
+    }
+    if(cell===C.GOAL){ const open=this._goalOpen(collected,obj);
+      const rad=ctx.createRadialGradient(x+cs/2,y+cs/2,2,x+cs/2,y+cs/2,cs*.6);
+      const col=open?'94,255,160':'120,120,140';
+      rad.addColorStop(0,`rgba(${col},${open?.4+pulse*.3:.2})`); rad.addColorStop(1,`rgba(${col},0)`);
+      ctx.fillStyle=rad; ctx.fillRect(x,y,cs,cs);
+      this._txt(ctx,open?'🚪':'🔒',x+cs/2,y+cs/2,cs*.5); return; }
+    if(cell===C.START){ ctx.fillStyle='rgba(58,209,255,.07)'; ctx.fillRect(x,y,cs,cs); return; }
+    const s=SHAPE_INFO[cell];
+    if(s){ if(!collected.includes(cell)){
+      const rad=ctx.createRadialGradient(x+cs/2,y+cs/2,2,x+cs/2,y+cs/2,cs*.55);
+      rad.addColorStop(0,s.color+'cc'); rad.addColorStop(1,s.color+'00'); ctx.fillStyle=rad; ctx.fillRect(x,y,cs,cs);
+      this._shape(ctx,cell,x+cs/2,y+cs/2,cs*.52,s.color,tick); } return; }
+    const n=NUMBER_INFO[cell];
+    if(n){ const nextNum=(obj&&obj.type==='sequence_numbers')?(obj._next||0)+1:-1;
+      const isTarget=(nextNum===-1)||(n.num===nextNum); const col=isTarget?'#a855f7':'#5a5070';
+      ctx.fillStyle=col+'22'; ctx.fillRect(x,y,cs,cs);
+      ctx.fillStyle=col; ctx.font=`bold ${cs*.46}px ui-sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(n.num,x+cs/2,y+cs/2); return; }
+    if(cell===C.BLANK){ ctx.strokeStyle='rgba(255,255,255,.32)'; ctx.setLineDash([4,4]);
+      ctx.strokeRect(x+6,y+6,cs-12,cs-12); ctx.setLineDash([]); this._txt(ctx,'?',x+cs/2,y+cs/2,cs*.4); return; }
   }
-
-  _fit() {
-    const wrap = document.getElementById('canvas-wrap');
-    if (!wrap) return;
-    const wr = wrap.clientWidth, wh = wrap.clientHeight - 160;
-    const scale = Math.min(wr / this.canvas.width, wh / this.canvas.height, 1.4);
-    this.canvas.style.transform = `translate(-50%, -50%) scale(${scale})`;
-  }
-
-  drawFrame(state, tick) {
-    this._anim = tick;
-    const { grid, player, theme, collected, levelObj } = state;
-    const ctx = this.ctx;
-    const cs = this.cellSize;
-
-    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-    const rows = grid.length, cols = grid[0].length;
-
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const cell = grid[r][c];
-        const x = c * cs, y = r * cs;
-        this._drawCell(ctx, cell, x, y, cs, theme, collected, levelObj, tick);
-      }
-    }
-
-    // Player
-    const px = player.c * cs + cs / 2;
-    const py = player.r * cs + cs / 2;
-    this._drawPlayer(ctx, px, py, cs, player.facing);
-  }
-
-  _drawCell(ctx, cell, x, y, cs, theme, collected, levelObj, tick) {
-    const pulse = (Math.sin(tick * 0.04) + 1) / 2;
-
-    if (cell === C.WALL) {
-      ctx.fillStyle = theme.wallColor || '#1a2548';
-      ctx.fillRect(x, y, cs, cs);
-      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-      ctx.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1);
-      return;
-    }
-
-    // Path background
-    ctx.fillStyle = theme.pathColor || '#0a1020';
-    ctx.fillRect(x, y, cs, cs);
-
-    if (cell === C.WALL) return;
-
-    if (cell === C.GOAL) {
-      const isOpen = this._isGoalOpen(collected, levelObj);
-      const glow = isOpen ? `rgba(94,255,160,${0.3 + pulse * 0.2})` : `rgba(100,100,120,0.18)`;
-      ctx.fillStyle = glow;
-      ctx.fillRect(x, y, cs, cs);
-      this._drawText(ctx, isOpen ? '🚪' : '🔒', x + cs / 2, y + cs / 2, cs * 0.55);
-      return;
-    }
-
-    if (cell === C.START) {
-      ctx.fillStyle = 'rgba(76,216,255,0.08)';
-      ctx.fillRect(x, y, cs, cs);
-      return;
-    }
-
-    const si = SHAPE_INFO[cell];
-    if (si) {
-      const isCollected = collected.includes(cell);
-      if (!isCollected) {
-        const alpha = 0.18 + pulse * 0.12;
-        ctx.fillStyle = si.color.replace(')', `,${alpha})`).replace('rgb', 'rgba').replace('#', 'rgba(').replace(')', ',)');
-        // simpler: use a radial gradient for glow
-        const rad = ctx.createRadialGradient(x + cs/2, y + cs/2, 2, x + cs/2, y + cs/2, cs * 0.55);
-        rad.addColorStop(0, si.color + 'cc');
-        rad.addColorStop(1, si.color + '00');
-        ctx.fillStyle = rad;
-        ctx.fillRect(x, y, cs, cs);
-        this._drawShapeSymbol(ctx, cell, x + cs / 2, y + cs / 2, cs * 0.52, si.color, tick);
-      }
-      return;
-    }
-
-    const ni = NUMBER_INFO[cell];
-    if (ni) {
-      const nextIdx = levelObj && levelObj.type === 'sequence_numbers' && levelObj._nextIdx !== undefined
-        ? levelObj._nextIdx : -1;
-      const isTarget = (ni.num === nextIdx + 1) || (nextIdx === -1);
-      const col = isTarget ? '#a78bfa' : '#5a5070';
-      ctx.fillStyle = col + '22';
-      ctx.fillRect(x, y, cs, cs);
-      ctx.fillStyle = col;
-      ctx.font = `bold ${cs * 0.46}px ui-sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(ni.num.toString(), x + cs / 2, y + cs / 2);
-      return;
-    }
-
-    if (cell === C.BLANK) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-      ctx.setLineDash([4, 4]);
-      ctx.strokeRect(x + 6, y + 6, cs - 12, cs - 12);
-      ctx.setLineDash([]);
-      this._drawText(ctx, '?', x + cs / 2, y + cs / 2, cs * 0.4);
-      return;
-    }
-
-    if (cell === C.PA) {
-      this._drawShapeSymbol(ctx, C.TRIANGLE, x + cs/2, y + cs/2, cs * 0.48, SHAPE_INFO[C.TRIANGLE].color, tick);
-      return;
-    }
-    if (cell === C.PB) {
-      this._drawShapeSymbol(ctx, C.CIRCLE, x + cs/2, y + cs/2, cs * 0.48, SHAPE_INFO[C.CIRCLE].color, tick);
-      return;
-    }
-  }
-
-  _isGoalOpen(collected, levelObj) {
-    if (!levelObj) return false;
-    if (levelObj.type === 'collect_shapes') {
-      return levelObj.targets.every(t => collected.includes(t));
-    }
-    if (levelObj.type === 'sequence_numbers') {
-      return (levelObj._nextIdx || 0) >= levelObj.targets.length;
-    }
-    if (levelObj.type === 'fill_patterns') {
-      return (levelObj._filled || 0) >= levelObj.blanks;
-    }
-    return false;
-  }
-
-  _drawShapeSymbol(ctx, type, cx, cy, size, color, tick) {
-    ctx.save();
-    const pulse = 1 + Math.sin(tick * 0.05) * 0.06;
-    ctx.translate(cx, cy);
-    ctx.scale(pulse, pulse);
-    ctx.fillStyle = color;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 10;
-
-    const r = size / 2;
-    switch (type) {
-      case C.TRIANGLE: {
-        ctx.beginPath();
-        ctx.moveTo(0, -r);
-        ctx.lineTo(r * 0.87, r * 0.5);
-        ctx.lineTo(-r * 0.87, r * 0.5);
-        ctx.closePath();
-        ctx.fill();
-        break;
-      }
-      case C.SQUARE: {
-        ctx.fillRect(-r * 0.75, -r * 0.75, r * 1.5, r * 1.5);
-        break;
-      }
-      case C.CIRCLE: {
-        ctx.beginPath();
-        ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2);
-        ctx.fill();
-        break;
-      }
-      case C.HEXAGON: {
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-          const a = (Math.PI / 3) * i - Math.PI / 6;
-          const hx = r * 0.82 * Math.cos(a), hy = r * 0.82 * Math.sin(a);
-          i === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
-        }
-        ctx.closePath();
-        ctx.fill();
-        break;
-      }
-      case C.STAR: {
-        ctx.beginPath();
-        for (let i = 0; i < 10; i++) {
-          const a = (Math.PI / 5) * i - Math.PI / 2;
-          const rr = i % 2 === 0 ? r * 0.85 : r * 0.38;
-          const sx = rr * Math.cos(a), sy = rr * Math.sin(a);
-          i === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
-        }
-        ctx.closePath();
-        ctx.fill();
-        break;
-      }
-    }
+  _goalOpen(collected,obj){ if(!obj)return false;
+    if(obj.type==='collect_shapes') return obj.targets.every(x=>collected.includes(x));
+    if(obj.type==='sequence_numbers') return (obj._next||0)>=obj.targets.length;
+    if(obj.type==='fill_patterns') return (obj._filled||0)>=obj.blanks;
+    if(obj.type==='echo_navigate') return true; return false; }
+  _shape(ctx,type,cx,cy,size,color,tick){
+    ctx.save(); const p=1+Math.sin(tick*.05)*.06; ctx.translate(cx,cy); ctx.scale(p,p);
+    ctx.fillStyle=color; ctx.shadowColor=color; ctx.shadowBlur=10; const r=size/2;
+    if(type===C.TRIANGLE){ ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(r*.87,r*.5); ctx.lineTo(-r*.87,r*.5); ctx.closePath(); ctx.fill(); }
+    else if(type===C.SQUARE){ ctx.fillRect(-r*.75,-r*.75,r*1.5,r*1.5); }
+    else if(type===C.CIRCLE){ ctx.beginPath(); ctx.arc(0,0,r*.8,0,7); ctx.fill(); }
+    else if(type===C.HEXAGON){ ctx.beginPath(); for(let i=0;i<6;i++){const a=Math.PI/3*i-Math.PI/6;const hx=r*.82*Math.cos(a),hy=r*.82*Math.sin(a);i?ctx.lineTo(hx,hy):ctx.moveTo(hx,hy);} ctx.closePath(); ctx.fill(); }
+    else if(type===C.STAR){ ctx.beginPath(); for(let i=0;i<10;i++){const a=Math.PI/5*i-Math.PI/2;const rr=i%2?r*.38:r*.85;const sx=rr*Math.cos(a),sy=rr*Math.sin(a);i?ctx.lineTo(sx,sy):ctx.moveTo(sx,sy);} ctx.closePath(); ctx.fill(); }
     ctx.restore();
   }
-
-  _drawPlayer(ctx, cx, cy, cs, facing) {
-    const r = cs * 0.28;
-    const tick = this._anim;
-    const bob = Math.sin(tick * 0.08) * 2;
-
-    ctx.save();
-    ctx.translate(cx, cy + bob);
-
-    // Glow
-    ctx.shadowColor = '#4cd8ff';
-    ctx.shadowBlur = 18;
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(76,216,255,0.9)';
-    ctx.fill();
-
-    // Direction arrow
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#fff';
-    ctx.font = `bold ${r * 1.1}px ui-sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const arrows = ['↑','→','↓','←'];
-    ctx.fillText(arrows[facing] || '●', 0, 0);
-
+  // Voxel explorer character (resembles maze_character.png)
+  _voxel(ctx,cx,cy,cs,facing,tick){
+    const u=cs/12, bob=Math.sin(tick*.08)*1.5; // unit
+    ctx.save(); ctx.translate(cx,cy+bob);
+    // glow base
+    ctx.shadowColor='#3ad1ff'; ctx.shadowBlur=16;
+    ctx.fillStyle='rgba(58,209,255,.15)'; ctx.beginPath(); ctx.ellipse(0,u*4,u*4,u*1.6,0,0,7); ctx.fill();
+    ctx.shadowBlur=0;
+    const HAIR='#7a4a25', SKIN='#e8b58a', SHIRT='#2a5fd0', SHIRT2='#1f47a0', PANT='#1a2f6b', PAD='#3ad1ff', BAG='#8a5a2a';
+    const px=(gx,gy,w,h,col)=>{ ctx.fillStyle=col; ctx.fillRect(Math.round(gx*u),Math.round(gy*u),Math.ceil(w*u),Math.ceil(h*u)); };
+    if(facing===0){ // back (moving up): show hair + backpack
+      px(-3,-6,6,3,HAIR); px(-3,-3,6,3,HAIR); // head back hair
+      px(-3.5,-1,7,5,BAG); // backpack
+      px(-3,4,6,4,PANT);
+      px(-3,8,2.5,2,HAIR); px(.5,8,2.5,2,HAIR); // boots
+    } else if(facing===2){ // front (moving down)
+      px(-3,-6,6,2.5,HAIR); px(-3,-3.5,6,4,SKIN); // head
+      px(-2.5,-2.5,1.5,1.5,'#16324f'); px(1,-2.5,1.5,1.5,'#16324f'); // eyes
+      px(-3.5,0,7,5,SHIRT); px(-3.5,0,2,5,SHIRT2); // body
+      px(-3,4.8,6,3.5,PANT);
+      px(-3,8,2.5,2,HAIR); px(.5,8,2.5,2,HAIR);
+      px(-6,1,2.5,3,PAD); ctx.shadowColor=PAD;ctx.shadowBlur=8;px(-5.7,1.3,1.9,2.4,'#bfefff');ctx.shadowBlur=0; // dot pad in hand
+    } else { // side (left/right) — draw facing right, flip for left
+      const flip = facing===3?-1:1; ctx.scale(flip,1);
+      px(-3,-6,6,2.5,HAIR); px(-2.5,-3.5,5.5,4,SKIN);
+      px(1.5,-2.5,1.5,1.5,'#16324f'); // eye
+      px(-3,0,5.5,5,SHIRT); px(2,-.5,2,5,BAG); // body + pack behind
+      px(-3,4.8,5.5,3.5,PANT);
+      px(-3,8,2.5,2,HAIR); px(.5,8,2.5,2,HAIR);
+      px(-6,1,2.5,3,PAD); ctx.shadowColor=PAD;ctx.shadowBlur=8;px(-5.7,1.3,1.9,2.4,'#bfefff');ctx.shadowBlur=0;
+    }
     ctx.restore();
+    // direction chevron
+    ctx.save(); ctx.translate(cx,cy-cs*.55); ctx.fillStyle='#3ad1ff'; ctx.shadowColor='#3ad1ff'; ctx.shadowBlur=8;
+    ctx.font=`bold ${cs*.3}px ui-sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(['↑','→','↓','←'][facing],0,0); ctx.restore();
   }
-
-  _drawText(ctx, text, x, y, size) {
-    ctx.font = `${size}px ui-sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(200,220,255,0.7)';
-    ctx.fillText(text, x, y);
-  }
+  _txt(ctx,text,x,y,size){ ctx.font=`${size}px ui-sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(200,220,255,.7)'; ctx.fillText(text,x,y); }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// INPUT CONTROLLER — keyboard + Dot Pad panning keys
+// ═══════════════════════════════════════════════════════════════════
+class InputController {
+  constructor(handlers){ this.h=handlers; this._active=false; this._bind(); }
+  setActive(v){ this._active=v; }
+  pan(dir){ // 'up'|'down'|'left'|'right'
+    if(!this._active) return;
+    const map={ up:[-1,0], down:[1,0], left:[0,-1], right:[0,1] };
+    if(map[dir]) this.h.onMove(...map[dir]);
+  }
+  action(){ if(this._active) this.h.onAction(); }
+  hint(){ if(this._active) this.h.onHint(); }
+  repeat(){ this.h.onRepeat(); }
+  _bind(){
+    const KEYS={ ArrowUp:'up',w:'up',W:'up', ArrowDown:'down',s:'down',S:'down',
+      ArrowLeft:'left',a:'left',A:'left', ArrowRight:'right',d:'right',D:'right' };
+    window.addEventListener('keydown',e=>{
+      if(KEYS[e.key]){ if(this._modalOpen())return; e.preventDefault(); this.pan(KEYS[e.key]); return; }
+      if(e.key===' '||e.key==='Enter'){ if(this._modalOpen())return; e.preventDefault(); this.action(); }
+      else if(e.key==='h'||e.key==='H'){ if(this._modalOpen())return; this.hint(); }
+      else if(e.key==='r'||e.key==='R'){ this.repeat(); }
+    });
+  }
+  _modalOpen(){ return !document.getElementById('intro-modal').classList.contains('hidden')
+    || !document.getElementById('success-modal').classList.contains('hidden')
+    || !document.getElementById('ws-modal').classList.contains('hidden'); }
+  // Dot Pad SDK hook: subscribe to physical panning keys.
+  // Expected adapter: { onKey(cb) } where cb receives 'up'|'down'|'left'|'right'|'select'
+  attachDotPad(adapter){
+    if(adapter && typeof adapter.onKey==='function'){
+      adapter.onKey(key=>{ if(key==='select'||key==='center') this.action(); else this.pan(key); });
+    }
+    // also accept DOM events for flexible integration
+    window.addEventListener('dotpad:pan',e=>{ const d=e.detail&&e.detail.dir; if(d==='select') this.action(); else if(d) this.pan(d); });
+  }
+}
+// global hook so external Dot Pad SDK / firmware bridge can drive movement
+window.ShapeCraftInput = { pan:(d)=>window.dispatchEvent(new CustomEvent('dotpad:pan',{detail:{dir:d}})) };
+
+// ═══════════════════════════════════════════════════════════════════
+// PROFILE (localStorage)
+// ═══════════════════════════════════════════════════════════════════
+const Profile = {
+  data:{ stars:0, worldStars:{}, badges:0, xp:0 },
+  load(){ try{ const s=localStorage.getItem('shapecraft_profile'); if(s) this.data=JSON.parse(s); }catch(e){} },
+  save(){ try{ localStorage.setItem('shapecraft_profile',JSON.stringify(this.data)); }catch(e){} },
+  level(){ return Math.floor(this.data.xp/100)+1; },
+  award(worldId,stars){
+    const prev=this.data.worldStars[worldId]||0;
+    if(stars>prev){ this.data.worldStars[worldId]=stars; this.data.xp+=(stars-prev)*4; }
+    this.data.stars=Object.values(this.data.worldStars).reduce((a,b)=>a+b,0);
+    this.data.badges=Object.values(this.data.worldStars).filter(s=>s>0).length;
+    this.save();
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════
 // GAME ENGINE
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 class GameEngine {
-  constructor(audio, tts, tactile, renderer) {
-    this.audio = audio;
-    this.tts = tts;
-    this.tactile = tactile;
-    this.renderer = renderer;
-
-    this.levelIdx = 0;
-    this.grid = [];
-    this.player = { r: 1, c: 1, facing: 2 }; // facing: 0=N,1=E,2=S,3=W
-    this.collected = []; // collected cell types this level
-    this.score = 0;
-    this.levelObj = null;
-    this._tick = 0;
-    this._rafId = null;
-    this._beaconTimer = null;
+  constructor(audio,tts,tactile,renderer){ this.audio=audio; this.tts=tts; this.tactile=tactile; this.renderer=renderer;
+    this.worldIdx=0; this.grid=[]; this.player={r:1,c:1,facing:2}; this.collected=[]; this.score=0; this.obj=null;
+    this._tick=0; this._raf=null; this._beacon=null; this._choice=null; }
+  load(idx){
+    this.worldIdx=idx; const w=WORLDS[idx]; if(!w)return;
+    this.grid=w.grid.map(r=>[...r]); this.collected=[]; this.score=0;
+    this.obj=JSON.parse(JSON.stringify(w.objective)); this.obj._next=0; this.obj._filled=0;
+    for(let r=0;r<this.grid.length;r++) for(let c=0;c<this.grid[r].length;c++)
+      if(this.grid[r][c]===C.START) this.player={r,c,facing:2};
+    this.renderer.resize(this.grid[0].length,this.grid.length);
+    document.getElementById('game-world-name').textContent=lang==='ko'?w.title.ko:w.title.en;
+    this._score(); this._hud(); this._challenge(); this._scheduleBeacon();
   }
-
-  loadLevel(idx) {
-    this.levelIdx = idx;
-    const level = LEVELS[idx];
-    if (!level) return;
-
-    // Deep clone grid
-    this.grid = level.grid.map(row => [...row]);
-    this.collected = [];
-    this.levelObj = JSON.parse(JSON.stringify(level.objective));
-    this.levelObj._nextIdx = 0; // for sequence
-    this.levelObj._filled = 0; // for patterns
-
-    // Find start
-    for (let r = 0; r < this.grid.length; r++) {
-      for (let c = 0; c < this.grid[r].length; c++) {
-        if (this.grid[r][c] === C.START) {
-          this.player = { r, c, facing: 2 };
-        }
-      }
-    }
-
-    this.renderer.resize(this.grid[0].length, this.grid.length);
-
-    document.getElementById('level-display').textContent = `Level ${level.id}`;
-    this._updateHUD();
-    this._updateChallenge();
-    this._scheduleBacon();
-  }
-
-  movePlayer(dr, dc) {
+  move(dr,dc){
     this.audio.resume();
-    const nr = this.player.r + dr;
-    const nc = this.player.c + dc;
-
-    // Determine facing
-    if (dr === -1) this.player.facing = 0;
-    else if (dc === 1) this.player.facing = 1;
-    else if (dr === 1) this.player.facing = 2;
-    else if (dc === -1) this.player.facing = 3;
-
-    if (nr < 0 || nr >= this.grid.length || nc < 0 || nc >= this.grid[0].length) {
-      this.audio.playWall();
-      this.tts.speak(t('wall'), true);
-      return;
+    if(dr===-1)this.player.facing=0; else if(dc===1)this.player.facing=1; else if(dr===1)this.player.facing=2; else if(dc===-1)this.player.facing=3;
+    const nr=this.player.r+dr, nc=this.player.c+dc;
+    if(nr<0||nr>=this.grid.length||nc<0||nc>=this.grid[0].length){ this.audio.wall(); this.tts.speak(t('wall'),true); return; }
+    const tgt=this.grid[nr][nc];
+    if(tgt===C.WALL){ this.audio.wall(); this.tts.speak(t('wall'),true); return; }
+    if(tgt===C.GOAL){
+      if(this._goalOpen()){ this.player.r=nr; this.player.c=nc; this.audio.goalOpen(); this.tts.speak(t('goalOpen')); setTimeout(()=>this._complete(),700); }
+      else { this.audio.goalBlocked(); this.tts.speak(t('needMore',this._remaining()),true); }
+      this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c); return;
     }
-
-    const target = this.grid[nr][nc];
-    if (target === C.WALL) {
-      this.audio.playWall();
-      this.tts.speak(t('wall'), true);
-      return;
-    }
-
-    if (target === C.GOAL) {
-      const open = this._isGoalOpen();
-      if (open) {
-        this.player.r = nr; this.player.c = nc;
-        this.audio.playGoalOpen();
-        this.tts.speak(t('goal-open'));
-        setTimeout(() => this._levelComplete(), 700);
-      } else {
-        const remaining = this._remainingCount();
-        this.audio.playGoalBlocked();
-        this.tts.speak(t('need-shapes', remaining), true);
-      }
-      return;
-    }
-
-    // Move OK
-    this.player.r = nr;
-    this.player.c = nc;
-
-    // Spatial pan based on direction
-    const pan = dc * 0.6;
-    this.audio.playMove(pan);
-
-    // Cell interaction
-    this._interactCell(target, nr, nc);
-    this._updateHUD();
-    this.tactile.update(this.grid, this.player.r, this.player.c);
+    this.player.r=nr; this.player.c=nc;
+    this.audio.move(dc*.6);
+    this._interact(tgt,nr,nc); this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c);
+    if(this.obj.type==='echo_navigate'){ const d=this._distToGoal(); if(d<=8){ const g=this._find(C.GOAL); this.audio.echo(d,(g.c-this.player.c)*.18); } }
   }
-
-  _interactCell(cell, r, c) {
-    const si = SHAPE_INFO[cell];
-    if (si) {
-      if (!this.collected.includes(cell)) {
-        this.collected.push(cell);
-        this.grid[r][c] = C.EMPTY;
-        this.audio.playCollect(cell);
-        const name = lang === 'ko' ? si.ko.name : si.en.name;
-        const desc = lang === 'ko' ? si.ko.desc : si.en.desc;
-        this.tts.speak(`${t('collected', name)} ${desc}`, true);
-        this.score += 10;
-        this._updateScore();
-        this._updateChallenge();
-      }
-      return;
-    }
-
-    const ni = NUMBER_INFO[cell];
-    if (ni) {
-      const obj = this.levelObj;
-      if (obj.type !== 'sequence_numbers') return;
-      const expected = obj._nextIdx + 1;
-      if (ni.num === expected) {
-        obj._nextIdx++;
-        this.grid[r][c] = C.EMPTY;
-        this.audio.playNumber(ni.num);
-        if (obj._nextIdx < obj.targets.length) {
-          const nextNum = obj._nextIdx + 1;
-          this.tts.speak(t('number_step', ni.num, nextNum), true);
-        } else {
-          this.tts.speak(t('number_done'), true);
-        }
-        this.score += 10;
-        this._updateScore();
-        this._updateChallenge();
-      } else {
-        this.audio.playPatternWrong();
-        this.tts.speak(t('number_wrong', ni.num, expected), true);
-      }
-      return;
-    }
-
-    if (cell === C.BLANK) {
-      this.audio.playHint();
-      this.tts.speak(t('pattern_blank'));
-      this._showPatternChoice(r, c);
-      return;
-    }
-
-    if (cell === C.PA) {
-      this.audio.playShape(C.TRIANGLE);
-      const name = lang === 'ko' ? SHAPE_INFO[C.TRIANGLE].ko.name : SHAPE_INFO[C.TRIANGLE].en.name;
-      this.tts.speak(name);
-    } else if (cell === C.PB) {
-      this.audio.playShape(C.CIRCLE);
-      const name = lang === 'ko' ? SHAPE_INFO[C.CIRCLE].ko.name : SHAPE_INFO[C.CIRCLE].en.name;
-      this.tts.speak(name);
-    }
+  _interact(cell,r,c){
+    const s=SHAPE_INFO[cell];
+    if(s){ if(!this.collected.includes(cell)){ this.collected.push(cell); this.grid[r][c]=C.EMPTY;
+      this.audio.collect(cell); this.tts.speak(`${t('found',nameOf(cell))} ${lang==='ko'?s.ko.desc:s.en.desc}`,true);
+      this.score+=10; this._score(); this._challenge(); } return; }
+    const n=NUMBER_INFO[cell];
+    if(n && this.obj.type==='sequence_numbers'){ const exp=this.obj._next+1;
+      if(n.num===exp){ this.obj._next++; this.grid[r][c]=C.EMPTY; this.audio.number(n.num);
+        if(this.obj._next<this.obj.targets.length) this.tts.speak(t('numStep',n.num,this.obj._next+1),true);
+        else this.tts.speak(t('numDone'),true);
+        this.score+=10; this._score(); this._challenge();
+      } else { this.audio.patNo(); this.tts.speak(t('numWrong',exp),true); }
+      return; }
+    if(cell===C.BLANK){ this.audio.hint(); this._choice={r,c,opt:0}; this.tts.speak(t('blank'),true); }
   }
-
-  _showPatternChoice(r, c) {
-    // Play triangle then circle with delay - player presses Space again to choose
-    this._patternChoicePos = { r, c };
-    this._patternChoiceState = 0; // 0=none, 1=hovering on choice
-    // For now: auto-accept if player steps on BLANK, open a simple choice
-    // Simplified: cycle through options with Space key, confirm with Enter
-  }
-
-  confirmPattern(answer) {
-    const pos = this._patternChoicePos;
-    if (!pos) return;
-    const obj = this.levelObj;
-    if (this.grid[pos.r][pos.c] === C.BLANK) {
-      // Level 3: pattern answer is always CIRCLE (C.CIRCLE alt PA/PB pattern)
-      this.grid[pos.r][pos.c] = answer;
-      obj._filled = (obj._filled || 0) + 1;
-      this.audio.playPatternCorrect();
-      this.tts.speak(t('pattern_correct'));
-      this.score += 15;
-      this._updateScore();
-      this._updateChallenge();
-      this._patternChoicePos = null;
-    }
-  }
-
-  actionButton() {
+  action(){
     this.audio.resume();
-    // Read surroundings
-    const msgs = this._getSurroundings();
-    if (msgs.length) {
-      this.tts.speak(msgs.join('. '), true);
-    } else {
-      this.tts.speak(t('facing', t('directions')[this.player.facing]));
+    // pattern blank choice cycling
+    if(this._choice && this.grid[this._choice.r][this._choice.c]===C.BLANK){
+      const opts=[C.TRIANGLE,C.CIRCLE,C.SQUARE];
+      // first action announces, repeated actions cycle; long-press semantics simplified:
+      this._choice.opt=(this._choice.opt+1)%opts.length;
+      const cand=opts[this._choice.opt];
+      const w=WORLDS[this.worldIdx]; const key=`${this._choice.r},${this._choice.c}`;
+      const answer=w.patternAnswer?w.patternAnswer[key]:C.SQUARE;
+      // double-confirm: if candidate equals answer announce & on next same action confirm
+      this.audio.shape(cand);
+      this.tts.speak(t('choosing',nameOf(cand)),true);
+      this._choice.cand=cand; this._choice.answer=answer;
+      // auto-confirm when correct candidate chosen twice
+      if(this._choice.cand===this._choice.answer && this._choice._armed){ this._confirmPattern(); return; }
+      this._choice._armed=(this._choice.cand===this._choice.answer);
+      return;
     }
+    const msgs=this._surround();
+    if(msgs.length) this.tts.speak(msgs.join('. '),true);
+    else if(this.obj.type==='echo_navigate'){ const d=this._distToGoal(); this.tts.speak(`${t('echoNear',d)} ${t('facing',t('dirs')[this.player.facing])}`,true); }
+    else this.tts.speak(t('facing',t('dirs')[this.player.facing]),true);
   }
-
-  hint() {
-    this.audio.resume();
-    const obj = this.levelObj;
-    let targetCell = null;
-
-    if (obj.type === 'collect_shapes') {
-      targetCell = obj.targets.find(t => !this.collected.includes(t));
-    } else if (obj.type === 'sequence_numbers') {
-      targetCell = obj.targets[obj._nextIdx];
-    } else if (obj.type === 'fill_patterns') {
-      // find first BLANK
-      for (let r = 0; r < this.grid.length; r++) {
-        for (let c = 0; c < this.grid[r].length; c++) {
-          if (this.grid[r][c] === C.BLANK) {
-            const dr = r - this.player.r, dc = c - this.player.c;
-            const pan = dc * 0.7 / Math.max(1, Math.abs(dc));
-            this.audio.playHint(pan);
-            this.tts.speak(t('pattern_blank'));
-            return;
-          }
-        }
-      }
-    }
-
-    if (targetCell !== null) {
-      const pos = this._findCell(targetCell);
-      if (pos) {
-        const dr = pos.r - this.player.r, dc = pos.c - this.player.c;
-        const pan = dc * 0.7 / Math.max(1, Math.abs(dc) + Math.abs(dr));
-        this.audio.playHint(pan);
-        const name = SHAPE_INFO[targetCell]
-          ? (lang === 'ko' ? SHAPE_INFO[targetCell].ko.name : SHAPE_INFO[targetCell].en.name)
-          : (NUMBER_INFO[targetCell] ? (lang === 'ko' ? NUMBER_INFO[targetCell].ko : NUMBER_INFO[targetCell].en) : '?');
-        this.tts.speak(t('hint_msg', name, dr, dc), true);
-      }
-    }
+  _confirmPattern(){ const ch=this._choice; this.grid[ch.r][ch.c]=ch.answer; this.obj._filled++;
+    this.audio.patOk(); this.tts.speak(t('patOk'),true); this.score+=15; this._score(); this._challenge();
+    this._choice=null; this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c); }
+  hint(){
+    this.audio.resume(); const obj=this.obj;
+    if(obj.type==='echo_navigate'){ const g=this._find(C.GOAL); const dr=g.r-this.player.r,dc=g.c-this.player.c;
+      this.audio.echo(this._distToGoal(),Math.sign(dc)*.6); this.tts.speak(t('hintMsg',t('exit'),dr,dc),true); return; }
+    if(obj.type==='fill_patterns'){ const b=this._find(C.BLANK); if(b){ const dr=b.r-this.player.r,dc=b.c-this.player.c;
+      this.audio.hint(Math.sign(dc)*.6); this.tts.speak(t('hintMsg',t('blankName'),dr,dc),true);} return; }
+    let target=null;
+    if(obj.type==='collect_shapes') target=obj.targets.find(x=>!this.collected.includes(x));
+    else if(obj.type==='sequence_numbers') target=obj.targets[obj._next];
+    if(target!=null){ const p=this._find(target); if(p){ const dr=p.r-this.player.r,dc=p.c-this.player.c;
+      this.audio.hint(Math.sign(dc)*.6); this.tts.speak(t('hintMsg',nameOf(target),dr,dc),true); } }
   }
-
-  _findCell(type) {
-    for (let r = 0; r < this.grid.length; r++) {
-      for (let c = 0; c < this.grid[r].length; c++) {
-        if (this.grid[r][c] === type) return { r, c };
-      }
-    }
-    return null;
+  _find(type){ for(let r=0;r<this.grid.length;r++) for(let c=0;c<this.grid[r].length;c++) if(this.grid[r][c]===type) return {r,c}; return null; }
+  _distToGoal(){ const g=this._find(C.GOAL); return g?Math.abs(g.r-this.player.r)+Math.abs(g.c-this.player.c):99; }
+  _surround(){ const msgs=[]; DIR.forEach(d=>{ const nr=this.player.r+d.dr,nc=this.player.c+d.dc;
+    if(nr<0||nr>=this.grid.length||nc<0||nc>=this.grid[0].length)return; const cell=this.grid[nr][nc];
+    const s=SHAPE_INFO[cell]; if(s&&!this.collected.includes(cell)) msgs.push(t('near',nameOf(cell))); }); return msgs; }
+  _goalOpen(){ const o=this.obj;
+    if(o.type==='collect_shapes') return o.targets.every(x=>this.collected.includes(x));
+    if(o.type==='sequence_numbers') return (o._next||0)>=o.targets.length;
+    if(o.type==='fill_patterns') return (o._filled||0)>=o.blanks;
+    if(o.type==='echo_navigate') return true; return false; }
+  _remaining(){ const o=this.obj;
+    if(o.type==='collect_shapes') return o.targets.filter(x=>!this.collected.includes(x)).length;
+    if(o.type==='sequence_numbers') return o.targets.length-(o._next||0);
+    if(o.type==='fill_patterns') return o.blanks-(o._filled||0); return 0; }
+  _complete(){
+    const w=WORLDS[this.worldIdx]; this.audio.success(); this.tts.speak(lang==='ko'?w.success.ko:w.success.en,true);
+    const earned=w.max; Profile.award(w.id,earned);
+    const sm=document.getElementById('success-modal');
+    document.getElementById('success-title-text').textContent=lang==='ko'?w.title.ko:w.title.en;
+    document.getElementById('success-body').textContent=lang==='ko'?w.success.ko:w.success.en;
+    document.getElementById('success-stars').textContent='⭐⭐⭐';
+    document.getElementById('btn-next').style.display=(this.worldIdx+1<WORLDS.length)?'':'none';
+    sm.classList.remove('hidden'); document.getElementById('btn-next').focus();
+    if(this._beacon) clearInterval(this._beacon);
+    if(window.app) window.app.refreshProfile();
   }
-
-  _getSurroundings() {
-    const msgs = [];
-    DIR.forEach((d, i) => {
-      const nr = this.player.r + d.dr;
-      const nc = this.player.c + d.dc;
-      if (nr < 0 || nr >= this.grid.length || nc < 0 || nc >= this.grid[0].length) return;
-      const cell = this.grid[nr][nc];
-      const si = SHAPE_INFO[cell];
-      if (si && !this.collected.includes(cell)) {
-        const name = lang === 'ko' ? si.ko.name : si.en.name;
-        const dir = t('directions')[i];
-        msgs.push(t('nearby', name, 1));
-      }
-    });
-    return msgs;
+  _hud(){
+    const dirs=t('dirs');
+    document.getElementById('hud-pos').textContent=`R${this.player.r} · C${this.player.c}`;
+    document.getElementById('hud-facing').textContent=t('facing',dirs[this.player.facing]);
+    const nb=document.getElementById('hud-nearby'); nb.innerHTML='';
+    DIR.forEach(d=>{ const nr=this.player.r+d.dr,nc=this.player.c+d.dc;
+      if(nr<0||nr>=this.grid.length||nc<0||nc>=this.grid[0].length)return; const cell=this.grid[nr][nc];
+      if(cell===C.EMPTY||cell===C.START||cell===C.WALL)return;
+      const s=SHAPE_INFO[cell],n=NUMBER_INFO[cell]; if(!s&&!n&&cell!==C.GOAL&&cell!==C.BLANK)return;
+      const color=s?s.color:'#a855f7'; const item=document.createElement('div'); item.className='nearby-item';
+      item.innerHTML=`<span class="nearby-dot" style="background:${color}"></span><span>${d.arrow} ${nameOf(cell)}</span>`;
+      nb.appendChild(item); });
   }
-
-  _isGoalOpen() {
-    const obj = this.levelObj;
-    if (obj.type === 'collect_shapes') return obj.targets.every(t => this.collected.includes(t));
-    if (obj.type === 'sequence_numbers') return (obj._nextIdx || 0) >= obj.targets.length;
-    if (obj.type === 'fill_patterns') return (obj._filled || 0) >= obj.blanks;
-    return false;
+  _challenge(){
+    const w=WORLDS[this.worldIdx],o=this.obj;
+    document.getElementById('challenge-text').textContent=lang==='ko'?o.description.ko:o.description.en;
+    const pr=document.getElementById('challenge-progress'); pr.innerHTML='';
+    if(o.type==='collect_shapes') o.targets.forEach(type=>{ const s=SHAPE_INFO[type]; const b=document.createElement('div');
+      b.className='shape-badge'+(this.collected.includes(type)?' collected':''); b.textContent=s.emoji; b.style.color=s.color; pr.appendChild(b); });
+    else if(o.type==='sequence_numbers') o.targets.forEach((type,i)=>{ const n=NUMBER_INFO[type]; const b=document.createElement('div');
+      b.className='shape-badge'+(i<o._next?' collected':''); b.textContent=n.num; b.style.color='#a855f7'; pr.appendChild(b); });
+    else if(o.type==='fill_patterns') for(let i=0;i<o.blanks;i++){ const b=document.createElement('div');
+      b.className='shape-badge'+(i<(o._filled||0)?' collected':''); b.textContent='?'; b.style.color='#ffc84a'; pr.appendChild(b); }
+    else if(o.type==='echo_navigate'){ const b=document.createElement('div'); b.className='shape-badge'; b.textContent='🚪'; pr.appendChild(b); }
   }
-
-  _remainingCount() {
-    const obj = this.levelObj;
-    if (obj.type === 'collect_shapes') return obj.targets.filter(t => !this.collected.includes(t)).length;
-    if (obj.type === 'sequence_numbers') return obj.targets.length - (obj._nextIdx || 0);
-    if (obj.type === 'fill_patterns') return obj.blanks - (obj._filled || 0);
-    return 0;
-  }
-
-  _levelComplete() {
-    const level = LEVELS[this.levelIdx];
-    this.audio.playSuccess();
-    this.tts.speak(lang === 'ko' ? level.successMsg.ko : level.successMsg.en, true);
-    this.score += 50;
-    this._updateScore();
-
-    const sm = document.getElementById('success-modal');
-    document.getElementById('success-title-text').textContent = lang === 'ko' ? level.title.ko : level.title.en;
-    document.getElementById('success-body').textContent = lang === 'ko' ? level.successMsg.ko : level.successMsg.en;
-    const hasNext = this.levelIdx + 1 < LEVELS.length;
-    document.getElementById('btn-next').style.display = hasNext ? '' : 'none';
-    sm.hidden = false;
-    document.getElementById('btn-next').focus();
-
-    if (this._beaconTimer) clearInterval(this._beaconTimer);
-  }
-
-  _updateHUD() {
-    const dirs = t('directions');
-    document.getElementById('hud-pos').textContent = `R${this.player.r} · C${this.player.c}`;
-    document.getElementById('hud-facing').textContent = t('facing', dirs[this.player.facing]);
-
-    const nearby = document.getElementById('hud-nearby');
-    nearby.innerHTML = '';
-    DIR.forEach((d, i) => {
-      const nr = this.player.r + d.dr;
-      const nc = this.player.c + d.dc;
-      if (nr < 0 || nr >= this.grid.length || nc < 0 || nc >= this.grid[0].length) return;
-      const cell = this.grid[nr][nc];
-      if (cell === C.EMPTY || cell === C.START || cell === C.WALL) return;
-      const si = SHAPE_INFO[cell];
-      const ni = NUMBER_INFO[cell];
-      if (!si && !ni && cell !== C.GOAL && cell !== C.BLANK) return;
-      const name = si ? (lang === 'ko' ? si.ko.name : si.en.name)
-        : ni ? (lang === 'ko' ? ni.ko : ni.en)
-        : cell === C.GOAL ? (lang === 'ko' ? '출구' : 'Exit')
-        : (lang === 'ko' ? '빈칸' : 'Blank');
-      const color = si ? si.color : '#a78bfa';
-      const item = document.createElement('div');
-      item.className = 'nearby-item';
-      item.innerHTML = `<span class="nearby-dot" style="background:${color}"></span><span>${d.arrow} ${name}</span>`;
-      nearby.appendChild(item);
-    });
-  }
-
-  _updateChallenge() {
-    const level = LEVELS[this.levelIdx];
-    const obj = this.levelObj;
-    document.getElementById('challenge-text').textContent =
-      lang === 'ko' ? obj.description.ko : obj.description.en;
-
-    const progress = document.getElementById('challenge-progress');
-    progress.innerHTML = '';
-
-    if (obj.type === 'collect_shapes') {
-      obj.targets.forEach(type => {
-        const si = SHAPE_INFO[type];
-        const badge = document.createElement('div');
-        badge.className = 'shape-badge' + (this.collected.includes(type) ? ' collected' : '');
-        badge.title = si ? (lang === 'ko' ? si.ko.name : si.en.name) : '';
-        badge.textContent = si ? si.emoji : '?';
-        badge.style.color = si ? si.color : '#fff';
-        progress.appendChild(badge);
-      });
-    } else if (obj.type === 'sequence_numbers') {
-      obj.targets.forEach((type, i) => {
-        const ni = NUMBER_INFO[type];
-        const badge = document.createElement('div');
-        badge.className = 'shape-badge' + (i < obj._nextIdx ? ' collected' : '');
-        badge.textContent = ni ? ni.num : '?';
-        badge.style.color = '#a78bfa';
-        progress.appendChild(badge);
-      });
-    } else if (obj.type === 'fill_patterns') {
-      for (let i = 0; i < obj.blanks; i++) {
-        const badge = document.createElement('div');
-        badge.className = 'shape-badge' + (i < (obj._filled || 0) ? ' collected' : '');
-        badge.textContent = '?';
-        badge.style.color = '#5effa0';
-        progress.appendChild(badge);
-      }
-    }
-  }
-
-  _updateScore() {
-    document.getElementById('score-display').textContent = `⭐ ${this.score}`;
-  }
-
-  _scheduleBacon() {
-    if (this._beaconTimer) clearInterval(this._beaconTimer);
-    this._beaconTimer = setInterval(() => {
-      if (!this.grid.length) return;
-      // Find nearest uncollected shape and play beacon
-      let nearest = null, nearestDist = 99;
-      const obj = this.levelObj;
-      if (!obj) return;
-
-      const targets = obj.type === 'collect_shapes' ? obj.targets.filter(t => !this.collected.includes(t))
-        : obj.type === 'sequence_numbers' && obj._nextIdx < obj.targets.length ? [obj.targets[obj._nextIdx]]
-        : [];
-
-      targets.forEach(type => {
-        for (let r = 0; r < this.grid.length; r++) {
-          for (let c = 0; c < this.grid[r].length; c++) {
-            if (this.grid[r][c] === type) {
-              const dist = Math.abs(r - this.player.r) + Math.abs(c - this.player.c);
-              if (dist < nearestDist) { nearestDist = dist; nearest = { type, r, c }; }
-            }
-          }
-        }
-      });
-
-      if (nearest && nearestDist <= 6) {
-        const pan = (nearest.c - this.player.c) * 0.18;
-        this.audio.playBeacon(nearest.type, nearestDist, pan);
-      }
-    }, 2800);
-  }
-
-  startLoop() {
-    const loop = (ts) => {
-      this._tick++;
-      const theme = LEVELS[this.levelIdx]?.theme || {};
-      this.renderer.drawFrame({
-        grid: this.grid,
-        player: this.player,
-        theme,
-        collected: this.collected,
-        levelObj: this.levelObj,
-      }, this._tick);
-      this._rafId = requestAnimationFrame(loop);
-    };
-    this._rafId = requestAnimationFrame(loop);
-  }
-
-  stopLoop() {
-    if (this._rafId) cancelAnimationFrame(this._rafId);
-  }
+  _score(){ document.getElementById('g-score').textContent=`⭐ ${this.score}`; }
+  _scheduleBeacon(){ if(this._beacon) clearInterval(this._beacon);
+    this._beacon=setInterval(()=>{ if(!this.grid.length)return; const o=this.obj; if(!o)return;
+      if(o.type==='echo_navigate'){ const d=this._distToGoal(); if(d<=10){ const g=this._find(C.GOAL); this.audio.echo(d,(g.c-this.player.c)*.15);} return; }
+      const targets=o.type==='collect_shapes'?o.targets.filter(x=>!this.collected.includes(x))
+        :o.type==='sequence_numbers'&&o._next<o.targets.length?[o.targets[o._next]]:[];
+      let near=null,nd=99; targets.forEach(type=>{ for(let r=0;r<this.grid.length;r++) for(let c=0;c<this.grid[r].length;c++)
+        if(this.grid[r][c]===type){ const dist=Math.abs(r-this.player.r)+Math.abs(c-this.player.c); if(dist<nd){nd=dist;near={type,r,c};} } });
+      if(near&&nd<=6) this.audio.beacon(near.type,nd,(near.c-this.player.c)*.18);
+    },2600); }
+  start(){ const loop=()=>{ this._tick++; const w=WORLDS[this.worldIdx];
+    this.renderer.draw({grid:this.grid,player:this.player,theme:w?w.theme:{},collected:this.collected,obj:this.obj},this._tick);
+    this._raf=requestAnimationFrame(loop); }; this._raf=requestAnimationFrame(loop); }
+  stop(){ if(this._raf) cancelAnimationFrame(this._raf); if(this._beacon) clearInterval(this._beacon); }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 // APP
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 class App {
-  constructor() {
-    this.audio = new AudioEngine();
-    this.tts = new TTSEngine();
-    this.tactile = new TactileEngine();
-    this.renderer = new Renderer(document.getElementById('game-canvas'));
-    this.engine = new GameEngine(this.audio, this.tts, this.tactile, this.renderer);
-    this._currentLevelIdx = 0;
+  constructor(){
+    this.audio=new AudioEngine(); this.tts=new TTSEngine(); this.tactile=new TactileEngine();
+    this.renderer=new Renderer(document.getElementById('game-canvas'));
+    this.engine=new GameEngine(this.audio,this.tts,this.tactile,this.renderer);
+    this.input=new InputController({
+      onMove:(dr,dc)=>this.engine.move(dr,dc), onAction:()=>this.engine.action(),
+      onHint:()=>this.engine.hint(), onRepeat:()=>this.tts.repeat(),
+    });
+    this.input.attachDotPad(null); // DOM-event bridge ready; pass real adapter when available
+    this._worldIdx=0; this._highestUnlocked=0;
   }
-
-  init() {
-    this._bindUI();
-    this._bindInput();
-    this._buildIntro(0);
-    this._updateI18n();
+  init(){
+    Profile.load();
+    this._buildLogo(); this._buildWorlds(); this._bindUI(); this._i18n(); this.refreshProfile();
+    this._starfield(); this._hubDotPad();
+    document.getElementById('hero-img').addEventListener('error',e=>{ e.target.style.display='none'; });
   }
-
-  _buildIntro(idx) {
-    const level = LEVELS[idx];
-    if (!level) return;
-    document.getElementById('intro-kicker').textContent = lang === 'ko' ? level.kicker.ko : level.kicker.en;
-    document.getElementById('intro-title-text').textContent = lang === 'ko' ? level.title.ko : level.title.en;
-    document.getElementById('intro-body').textContent = lang === 'ko' ? level.intro.ko : level.intro.en;
-    const legendEl = document.getElementById('intro-legend');
-    legendEl.innerHTML = '';
-    (level.legend || []).forEach(item => {
-      const si = SHAPE_INFO[item.type];
-      const ni = NUMBER_INFO[item.type];
-      const div = document.createElement('div');
-      div.className = 'legend-item';
-      const icon = document.createElement('div');
-      icon.className = 'legend-icon';
-      icon.style.background = (si ? si.color : '#a78bfa') + '22';
-      icon.textContent = si ? si.emoji : ni ? ni.emoji : '?';
-      const span = document.createElement('span');
-      span.textContent = si ? (lang === 'ko' ? `${si.ko.name}: ${si.ko.desc}` : `${si.en.name}: ${si.en.desc}`)
-        : ni ? (lang === 'ko' ? `숫자 ${ni.num}` : `Number ${ni.num}`)
-        : (lang === 'ko' ? '빈칸 채우기' : 'Fill the blank');
-      div.appendChild(icon); div.appendChild(span);
-      legendEl.appendChild(div);
-    });
+  refreshProfile(){
+    const d=Profile.data;
+    document.getElementById('stat-stars').textContent=d.stars;
+    document.getElementById('stat-badges').textContent=d.badges;
+    document.getElementById('player-level').textContent=Profile.level();
+    const xpInLevel=d.xp%100;
+    document.getElementById('xp-fill').style.width=xpInLevel+'%';
+    document.getElementById('xp-text').textContent=`${xpInLevel} / 100 XP`;
+    document.getElementById('player-avatar').style.backgroundImage="url('./maze_character.png')";
+    this._buildWorlds();
+    // unlock logic: world i unlocked if previous completed
+    this._highestUnlocked=0;
+    for(let i=0;i<WORLDS.length;i++){ if(i===0||(Profile.data.worldStars[WORLDS[i-1].id]||0)>0) this._highestUnlocked=i; else break; }
   }
-
-  _startLevel(idx) {
-    this._currentLevelIdx = idx;
-    document.getElementById('intro-modal').hidden = true;
-    this.engine.loadLevel(idx);
-    this.engine.startLoop();
-    this.tactile.update(this.engine.grid, this.engine.player.r, this.engine.player.c);
-    document.getElementById('canvas-wrap').focus();
-    // Intro TTS
-    const level = LEVELS[idx];
-    setTimeout(() => {
-      this.tts.speak(lang === 'ko' ? level.intro.ko : level.intro.en);
-    }, 400);
-  }
-
-  _bindUI() {
-    document.getElementById('btn-start').addEventListener('click', () => {
-      this._startLevel(this._currentLevelIdx);
-    });
-
-    document.getElementById('btn-next').addEventListener('click', () => {
-      document.getElementById('success-modal').hidden = true;
-      const next = this._currentLevelIdx + 1;
-      if (next < LEVELS.length) {
-        this._currentLevelIdx = next;
-        this._buildIntro(next);
-        document.getElementById('intro-modal').hidden = false;
-        document.getElementById('btn-start').focus();
-      }
-    });
-
-    document.getElementById('btn-replay').addEventListener('click', () => {
-      document.getElementById('success-modal').hidden = true;
-      this._startLevel(this._currentLevelIdx);
-    });
-
-    document.getElementById('btn-lang').addEventListener('click', () => {
-      lang = lang === 'ko' ? 'en' : 'ko';
-      document.getElementById('btn-lang').textContent = `🌐 ${lang.toUpperCase()}`;
-      document.documentElement.lang = lang;
-      this._updateI18n();
-      // Rebuild current intro if showing
-      if (!document.getElementById('intro-modal').hidden) {
-        this._buildIntro(this._currentLevelIdx);
-      }
-      this.engine._updateChallenge();
-      this.engine._updateHUD();
-    });
-
-    document.getElementById('btn-tts').addEventListener('click', () => {
-      const on = this.tts.toggle();
-      document.getElementById('btn-tts').textContent = on ? '🔊 TTS' : '🔇 TTS';
-    });
-
-    document.getElementById('btn-hint').addEventListener('click', () => {
-      this.engine.hint();
-    });
-
-    // D-pad
-    const dpad = {
-      'dpad-up': () => this.engine.movePlayer(-1, 0),
-      'dpad-left': () => this.engine.movePlayer(0, -1),
-      'dpad-right': () => this.engine.movePlayer(0, 1),
-      'dpad-center': () => this.engine.actionButton(),
-    };
-    Object.entries(dpad).forEach(([id, fn]) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.addEventListener('touchstart', e => { e.preventDefault(); fn(); }, { passive: false });
-        el.addEventListener('mousedown', fn);
-      }
+  _buildLogo(){ const el=document.getElementById('brand-logo'); el.innerHTML='';
+    const on=new Set([2,6,8,10,12,14,16,18,22]); // diagonal-ish dot pattern
+    for(let i=0;i<25;i++){ const d=document.createElement('i'); if(on.has(i)) d.className='on'; el.appendChild(d); } }
+  _buildWorlds(){
+    const track=document.getElementById('worlds-track'); track.innerHTML='';
+    const wsGrid=document.getElementById('ws-grid'); if(wsGrid) wsGrid.innerHTML='';
+    WORLDS.forEach((w,i)=>{
+      const earned=Profile.data.worldStars[w.id]||0;
+      const unlocked = i===0 || (Profile.data.worldStars[WORLDS[i-1].id]||0)>0;
+      // carousel card
+      const card=document.createElement('button'); card.className='world-card'+(unlocked?'':' locked');
+      card.innerHTML=`<div class="world-thumb" style="background:linear-gradient(135deg,${w.thumb},#0a0620)"></div>
+        <div class="world-overlay"></div>
+        <div class="world-num" style="background:${w.theme.accent}33;color:#fff">${w.id}</div>
+        <div class="world-info"><div class="world-name">${lang==='ko'?w.title.ko:w.title.en}</div>
+        <div class="world-stars">${unlocked?`⭐ ${earned} / ${w.max}`:`🔒 ${t('locked')}`}</div></div>`;
+      if(unlocked) card.addEventListener('click',()=>this._openIntro(i));
+      track.appendChild(card);
+      // world-select grid
+      if(wsGrid){ const c2=card.cloneNode(true); if(unlocked) c2.addEventListener('click',()=>{ this._closeWS(); this._openIntro(i); }); wsGrid.appendChild(c2); }
     });
   }
-
-  _bindInput() {
-    const KEY_MAP = {
-      ArrowUp: [-1,0], w: [-1,0], W: [-1,0],
-      ArrowDown: [1,0], s: [1,0], S: [1,0],
-      ArrowLeft: [0,-1], a: [0,-1], A: [0,-1],
-      ArrowRight: [0,1], d: [0,1], D: [0,1],
-    };
-
-    window.addEventListener('keydown', e => {
-      const move = KEY_MAP[e.key];
-      if (move) {
-        e.preventDefault();
-        if (!document.getElementById('intro-modal').hidden) return;
-        if (!document.getElementById('success-modal').hidden) return;
-        this.engine.movePlayer(...move);
-        return;
-      }
-      if (e.key === ' ' || e.key === 'Enter') {
-        if (!document.getElementById('intro-modal').hidden) return;
-        if (!document.getElementById('success-modal').hidden) return;
-        e.preventDefault();
-        this.engine.actionButton();
-      }
-      if (e.key === 'h' || e.key === 'H') {
-        if (!document.getElementById('intro-modal').hidden) return;
-        this.engine.hint();
-      }
-      if (e.key === 'r' || e.key === 'R') {
-        this.tts.repeat();
-      }
-    });
-
-    // Touch swipe on canvas
-    let tx0 = 0, ty0 = 0;
-    const cw = document.getElementById('canvas-wrap');
-    cw.addEventListener('touchstart', e => { tx0 = e.touches[0].clientX; ty0 = e.touches[0].clientY; }, { passive: true });
-    cw.addEventListener('touchend', e => {
-      if (document.getElementById('intro-modal').hidden === false) return;
-      const dx = e.changedTouches[0].clientX - tx0;
-      const dy = e.changedTouches[0].clientY - ty0;
-      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) { this.engine.actionButton(); return; }
-      if (Math.abs(dx) > Math.abs(dy)) {
-        this.engine.movePlayer(0, dx > 0 ? 1 : -1);
-      } else {
-        this.engine.movePlayer(dy > 0 ? 1 : -1, 0);
-      }
-    }, { passive: true });
-
-    // Resize
-    window.addEventListener('resize', () => { this.renderer._fit(); });
+  _openIntro(idx){
+    this._worldIdx=idx; const w=WORLDS[idx];
+    document.getElementById('intro-kicker').textContent=w.kicker;
+    document.getElementById('intro-title-text').textContent=lang==='ko'?w.title.ko:w.title.en;
+    document.getElementById('intro-body').textContent=lang==='ko'?w.intro.ko:w.intro.en;
+    const lg=document.getElementById('intro-legend'); lg.innerHTML='';
+    (w.legend||[]).forEach(it=>{ const s=SHAPE_INFO[it.t],n=NUMBER_INFO[it.t];
+      const div=document.createElement('div'); div.className='legend-item';
+      const ic=document.createElement('div'); ic.className='legend-icon';
+      ic.style.background=(s?s.color:'#a855f7')+'22'; ic.textContent=s?s.emoji:n?n.emoji:(it.t===C.GOAL?'🚪':'?');
+      const sp=document.createElement('span');
+      sp.textContent=s?(lang==='ko'?`${s.ko.name}: ${s.ko.desc}`:`${s.en.name}: ${s.en.desc}`)
+        :n?(lang==='ko'?`숫자 ${n.num}`:`Number ${n.num}`)
+        :it.t===C.GOAL?(lang==='ko'?'출구 — 소리로 찾기':'Exit — find by sound')
+        :(lang==='ko'?'빈칸 채우기':'Fill the blank');
+      div.appendChild(ic); div.appendChild(sp); lg.appendChild(div); });
+    document.getElementById('intro-modal').classList.remove('hidden');
+    document.getElementById('btn-enter').focus();
   }
-
-  _updateI18n() {
-    document.querySelectorAll('[data-i]').forEach(el => {
-      const key = el.dataset.i;
-      el.textContent = t(key) || el.textContent;
-    });
+  _startWorld(idx){
+    document.getElementById('intro-modal').classList.add('hidden');
+    document.getElementById('hub').classList.add('hidden');
+    document.getElementById('game').classList.remove('hidden');
+    this.input.setActive(true);
+    this.engine.load(idx); this.engine.start();
+    this.tactile.update(this.engine.grid,this.engine.player.r,this.engine.player.c);
+    document.getElementById('canvas-wrap').focus(); this.renderer.fit();
+    const w=WORLDS[idx]; setTimeout(()=>this.tts.speak(lang==='ko'?w.intro.ko:w.intro.en),400);
   }
+  _toHub(){
+    this.input.setActive(false); this.engine.stop(); speechSynthesis.cancel();
+    document.getElementById('game').classList.add('hidden');
+    document.getElementById('success-modal').classList.add('hidden');
+    document.getElementById('hub').classList.remove('hidden');
+    this.refreshProfile();
+  }
+  _closeWS(){ document.getElementById('ws-modal').classList.add('hidden'); }
+  _bindUI(){
+    document.getElementById('btn-start').addEventListener('click',()=>{ this.audio.resume(); this._openIntro(this._highestUnlocked||0); });
+    document.getElementById('btn-continue').addEventListener('click',()=>{ this.audio.resume(); this._openIntro(this._highestUnlocked||0); });
+    document.getElementById('btn-worldselect').addEventListener('click',()=>{ this._buildWorlds(); document.getElementById('ws-modal').classList.remove('hidden'); });
+    document.getElementById('btn-ws-close').addEventListener('click',()=>this._closeWS());
+    document.getElementById('btn-enter').addEventListener('click',()=>this._startWorld(this._worldIdx));
+    document.getElementById('btn-back').addEventListener('click',()=>this._toHub());
+    document.getElementById('btn-tohub').addEventListener('click',()=>this._toHub());
+    document.getElementById('btn-next').addEventListener('click',()=>{
+      document.getElementById('success-modal').classList.add('hidden');
+      const nx=this._worldIdx+1; if(nx<WORLDS.length){ this._toHub(); this._openIntro(nx); } else this._toHub();
+    });
+    document.getElementById('btn-replay').addEventListener('click',()=>{
+      document.getElementById('success-modal').classList.add('hidden'); this._startWorld(this._worldIdx); });
+    document.getElementById('btn-lang').addEventListener('click',()=>{
+      lang=lang==='ko'?'en':'ko'; document.getElementById('btn-lang').textContent=`🌐 ${lang.toUpperCase()}`;
+      document.documentElement.lang=lang; this._i18n(); this._buildWorlds(); this.engine._challenge(); this.engine._hud();
+    });
+    document.getElementById('btn-tts').addEventListener('click',()=>{ const on=this.tts.toggle();
+      document.getElementById('btn-tts').textContent=on?'🔊 TTS':'🔇 TTS'; });
+    document.getElementById('btn-hint').addEventListener('click',()=>this.engine.hint());
+    document.getElementById('btn-settings').addEventListener('click',()=>{
+      const on=this.tts.toggle(); document.getElementById('btn-settings').textContent=on?'⚙️':'🔇';
+    });
+    // Dot Pad panning keys (on-screen)
+    const pk={ 'pan-up':()=>this.input.pan('up'), 'pan-down':()=>this.input.pan('down'),
+      'pan-left':()=>this.input.pan('left'), 'pan-right':()=>this.input.pan('right'), 'pan-act':()=>this.input.action() };
+    Object.entries(pk).forEach(([id,fn])=>{ const el=document.getElementById(id); if(!el)return;
+      el.addEventListener('click',fn);
+      el.addEventListener('touchstart',e=>{ e.preventDefault(); fn(); },{passive:false}); });
+    // canvas swipe
+    let tx=0,ty=0; const cw=document.getElementById('canvas-wrap');
+    cw.addEventListener('touchstart',e=>{ tx=e.touches[0].clientX; ty=e.touches[0].clientY; },{passive:true});
+    cw.addEventListener('touchend',e=>{ const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+      if(Math.abs(dx)<12&&Math.abs(dy)<12){ this.input.action(); return; }
+      if(Math.abs(dx)>Math.abs(dy)) this.input.pan(dx>0?'right':'left'); else this.input.pan(dy>0?'down':'up'); },{passive:true});
+    // overlay click-to-close for ws
+    document.getElementById('ws-modal').addEventListener('click',e=>{ if(e.target.id==='ws-modal') this._closeWS(); });
+    window.addEventListener('resize',()=>this.renderer.fit());
+  }
+  _i18n(){ document.querySelectorAll('[data-i]').forEach(el=>{ const k=el.dataset.i; const v=t(k); if(typeof v==='string') el.textContent=v; });
+    // mission text localized
+    document.getElementById('mission-text').textContent=lang==='ko'?'삼각형 열쇠를 찾아 문을 여세요.':'Find the triangle key to unlock the gate.';
+  }
+  _starfield(){ const cv=document.getElementById('starfield'); const ctx=cv.getContext('2d');
+    const resize=()=>{ cv.width=innerWidth; cv.height=innerHeight; }; resize(); window.addEventListener('resize',resize);
+    const stars=Array.from({length:90},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,s:Math.random()*1.6+.3,p:Math.random()*6}));
+    let f=0; const draw=()=>{ f++; ctx.clearRect(0,0,cv.width,cv.height);
+      stars.forEach(st=>{ const a=.4+Math.sin(f*.03+st.p)*.4; ctx.fillStyle=`rgba(190,160,255,${a})`;
+        ctx.fillRect(st.x,st.y,st.s,st.s); }); requestAnimationFrame(draw); }; draw(); }
+  _hubDotPad(){ const cv=document.getElementById('hub-dotpad-canvas'); if(!cv)return; const ctx=cv.getContext('2d');
+    const W=cv.width,H=cv.height, cols=24, rows=12, dw=W/cols, dh=H/rows;
+    // show a star shape pattern in the matrix
+    let f=0; const draw=()=>{ f++; ctx.clearRect(0,0,W,H); ctx.fillStyle='#060312'; ctx.fillRect(0,0,W,H);
+      for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+        const cx=c-cols/2+.5, cy=r-rows/2+.5; const d=Math.sqrt(cx*cx+cy*cy);
+        const on=(d>3.5&&d<4.5)||(Math.abs(cx)<1&&Math.abs(cy)<4)||(Math.abs(cy)<1&&Math.abs(cx)<4);
+        const lit=on && (Math.sin(f*.05+d)>-.2);
+        ctx.beginPath(); ctx.arc(c*dw+dw/2,r*dh+dh/2,Math.min(dw,dh)*.32,0,7);
+        ctx.fillStyle=lit?'#3ad1ff':'#1a2440'; if(lit){ctx.shadowColor='#3ad1ff';ctx.shadowBlur=3;} ctx.fill(); ctx.shadowBlur=0;
+      } requestAnimationFrame(draw); }; draw(); }
 }
 
-// Boot
-const app = new App();
-document.addEventListener('DOMContentLoaded', () => app.init());
+const app=new App(); window.app=app;
+document.addEventListener('DOMContentLoaded',()=>app.init());
 </script>
 </body>
 </html>
