@@ -17,6 +17,15 @@ A tactile sandbox math game for visually impaired children — *explore shapes w
 
 월드는 순서대로 잠금 해제되며, 완료 시 별과 뱃지·XP를 획득해 프로필 레벨이 오릅니다. (진행도는 localStorage에 저장)
 
+## 프리미엄 게임 UI (시각 품질)
+
+평면 웹앱이 아니라 **실제 게임 안에 들어온 듯한 3D/RPG/아케이드 콘솔 UI**:
+- **젬·네온 CTA 버튼**(다층 그림자·내부 그라데이션·상단 하이라이트·hover glow·hover 시 shimmer·pressed depth)
+- **아케이드 키캡**(F1~F4·패닝키: 돌출된 입체 키, 누르면 쑥 들어가는 깊이감)
+- **입체 글래스 패널**(미션/Dot Pad/HUD/모달: 베벨·다층 그림자·미세 점자 도트 텍스처)
+- 메탈릭 토글, 젬 스캔 버튼, 미션 카드 attention pulse, 업적/토스트 게임식 피드백
+- 전부 CSS만으로(외부 이미지 無), `prefers-reduced-motion`·고대비·focus-visible 포커스 링 유지 → **접근성 무손상**, 60fps 가벼운 효과(transform/opacity 중심)
+
 ## 처음에도 막막하지 않게 (온보딩·친절함)
 
 - **단계별 튜토리얼(첫 진입)** — 처음 플레이하면 도티가 이동 → 주변 스캔 → 도형 만나기를 한 단계씩 음성으로 안내. 행동하면 칭찬하며 진행, 안 해도 잠시 뒤 다음 단계로 넘어가 **막히지 않음**. 설정에서 다시 보기 가능

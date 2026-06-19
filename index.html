@@ -431,6 +431,130 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
   .player-card{padding:8px 10px;gap:8px;}
   .player-stat{padding:0 5px;}
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   GAME UI THEME — premium 3D / RPG / arcade-console look (visual only).
+   Appended last so it layers over base styles; only touches background,
+   border, shadow, transition + interaction states (no layout props).
+   ═══════════════════════════════════════════════════════════════════ */
+:root{
+  --g-drop:0 10px 26px rgba(0,0,0,.5);
+  --g-top:inset 0 1px 0 rgba(255,255,255,.30);
+  --g-inset:inset 0 -2px 6px rgba(0,0,0,.42);
+  --g-edge:rgba(160,130,255,.32);
+  --g-panel:linear-gradient(165deg,rgba(46,32,92,.82),rgba(15,10,36,.92));
+  --g-dots:radial-gradient(rgba(150,180,255,.05) 1px,transparent 1.6px);
+}
+/* ── input-device shimmer keyframe (GPU transform only) ── */
+@keyframes gShimmer{from{transform:translateX(-130%)}to{transform:translateX(130%)}}
+@keyframes gMissionPulse{0%,100%{box-shadow:var(--g-drop),var(--g-top),0 0 0 rgba(255,200,74,0)}50%{box-shadow:var(--g-drop),var(--g-top),0 0 22px rgba(255,200,74,.32)}}
+@keyframes gToastPop{0%{transform:translateX(-50%) translateY(24px) scale(.9);opacity:0}60%{transform:translateX(-50%) translateY(-3px) scale(1.03)}100%{transform:translateX(-50%) translateY(0) scale(1);opacity:1}}
+@keyframes gChipPop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+
+/* ── deep, beveled glass panels with subtle tactile dot texture ── */
+.player-card,.mission-card,.dotpad-panel,.hud-dotpad,.modal{
+  background:var(--g-dots) 0 0/15px 15px, var(--g-panel);
+  border:1px solid var(--g-edge);
+  box-shadow:var(--g-drop),var(--g-top),inset 0 -1px 0 rgba(0,0,0,.5);
+}
+.hud-quest,.hud-stats,.hud-dialogue{
+  background:var(--g-panel);
+  border:1px solid var(--g-edge);
+  box-shadow:0 8px 22px rgba(0,0,0,.5),var(--g-top),inset 0 -1px 0 rgba(0,0,0,.45);
+}
+.modal{box-shadow:0 36px 90px rgba(0,0,0,.62),var(--g-top),0 0 0 1px rgba(160,130,255,.18),inset 0 1px 0 rgba(255,255,255,.22);}
+
+/* ── PRIMARY: gem/neon CTA (Start, Enter, Next, primary modal) ── */
+.btn-start,.btn-primary{
+  position:relative; overflow:hidden;
+  background:linear-gradient(180deg,#b873ff 0%,#8b46f0 48%,#6a26c9 100%);
+  border:1px solid rgba(206,170,255,.65);
+  box-shadow:0 14px 34px rgba(124,58,237,.55),0 0 26px rgba(168,85,247,.32),inset 0 2px 0 rgba(255,255,255,.45),inset 0 -5px 12px rgba(58,18,108,.6);
+  transition:transform .14s cubic-bezier(.2,.7,.3,1),box-shadow .18s ease,filter .15s ease;
+}
+.btn-start::after,.btn-primary::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(110deg,transparent 36%,rgba(255,255,255,.4) 50%,transparent 64%);transform:translateX(-130%);}
+.btn-start:hover,.btn-primary:hover{transform:translateY(-2px);filter:brightness(1.06);
+  box-shadow:0 18px 46px rgba(124,58,237,.7),0 0 46px rgba(168,85,247,.55),inset 0 2px 0 rgba(255,255,255,.5),inset 0 -5px 12px rgba(58,18,108,.55);}
+.btn-start:hover::after,.btn-primary:hover::after{animation:gShimmer .9s ease}
+.btn-start:active,.btn-primary:active{transform:translateY(2px);box-shadow:inset 0 5px 14px rgba(40,12,80,.7),0 4px 10px rgba(0,0,0,.4);}
+.btn-start:focus-visible,.btn-primary:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(58,209,255,.55),0 14px 34px rgba(124,58,237,.55),inset 0 2px 0 rgba(255,255,255,.45);}
+
+/* ── SECONDARY: brushed-glass buttons (Continue, World Select, sm, icon btns) ── */
+.btn-sub,.btn-sm,.set-dp-btn,.worlds-next,.hud-icon-btn,.hud-back,.icon-btn,.player-stat-btn,.dotpad-status,.dotpad-conn{
+  background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.02)),rgba(22,15,48,.72);
+  border:1px solid var(--g-edge);
+  box-shadow:0 8px 20px rgba(0,0,0,.42),var(--g-top),var(--g-inset);
+  transition:transform .12s ease,box-shadow .16s ease,background .16s ease,filter .15s ease;
+}
+.btn-sub:hover,.btn-sm:hover,.set-dp-btn:hover,.worlds-next:hover,.hud-icon-btn:hover,.hud-back:hover,.icon-btn:hover,.player-stat-btn:hover,.dotpad-status:hover,.dotpad-conn:hover{
+  transform:translateY(-2px);filter:brightness(1.08);
+  box-shadow:0 12px 26px rgba(0,0,0,.45),0 0 18px rgba(168,85,247,.4),var(--g-top);}
+.btn-sub:active,.btn-sm:active,.set-dp-btn:active,.worlds-next:active,.hud-icon-btn:active,.hud-back:active,.icon-btn:active,.player-stat-btn:active,.dotpad-status:active,.dotpad-conn:active{
+  transform:translateY(1px);box-shadow:inset 0 3px 8px rgba(0,0,0,.5);}
+.btn-sub:focus-visible,.btn-sm:focus-visible,.set-dp-btn:focus-visible,.worlds-next:focus-visible,.hud-icon-btn:focus-visible,.hud-back:focus-visible,.icon-btn:focus-visible,.player-stat-btn:focus-visible,.dotpad-status:focus-visible,.dotpad-conn:focus-visible{
+  outline:none;box-shadow:0 0 0 4px rgba(58,209,255,.5),0 8px 20px rgba(0,0,0,.42);}
+button:disabled,.btn-sm:disabled,.btn-primary:disabled{filter:grayscale(.5) brightness(.7);opacity:.55;box-shadow:inset 0 -2px 6px rgba(0,0,0,.4);cursor:not-allowed;transform:none;}
+
+/* ── SCAN: cyan gem action ── */
+.btn-scan{
+  background:linear-gradient(180deg,#5fe0ff 0%,#2bb6e6 50%,#1f7fc9 100%);color:#04223a;
+  border:1px solid rgba(170,240,255,.7);
+  box-shadow:0 12px 28px rgba(58,209,255,.4),inset 0 2px 0 rgba(255,255,255,.55),inset 0 -4px 10px rgba(10,70,120,.5);
+  transition:transform .12s ease,box-shadow .16s ease,filter .15s ease;}
+.btn-scan .scan-kbd{background:rgba(4,34,58,.25);color:#04223a;}
+.btn-scan:hover{transform:translateY(-2px);filter:brightness(1.07);box-shadow:0 16px 36px rgba(58,209,255,.55),0 0 30px rgba(58,209,255,.45),inset 0 2px 0 rgba(255,255,255,.6);}
+.btn-scan:active{transform:translateY(2px);box-shadow:inset 0 5px 12px rgba(8,60,100,.6);}
+.btn-scan:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(255,255,255,.55),0 12px 28px rgba(58,209,255,.4);}
+
+/* ── ARCADE KEYCAPS: F1~F4 / panning keys (extruded, satisfying press) ── */
+.pan-btn{
+  background:linear-gradient(180deg,rgba(70,52,120,.95),rgba(30,20,62,.98));
+  border:1px solid rgba(150,120,240,.45);
+  box-shadow:0 5px 0 rgba(8,5,22,.9),0 9px 16px rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.28),inset 0 -2px 4px rgba(0,0,0,.4);
+  transition:transform .07s ease,box-shadow .07s ease,filter .12s ease;}
+.pan-btn:hover{filter:brightness(1.1);box-shadow:0 5px 0 rgba(8,5,22,.9),0 0 18px rgba(58,209,255,.45),inset 0 2px 0 rgba(255,255,255,.32);}
+.pan-btn:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(8,5,22,.9),inset 0 3px 8px rgba(0,0,0,.55);}
+.pan-btn:focus-visible{outline:none;box-shadow:0 5px 0 rgba(8,5,22,.9),0 0 0 4px rgba(58,209,255,.55);}
+.pan-act{background:linear-gradient(180deg,rgba(190,120,255,.85),rgba(124,58,237,.95));border-color:rgba(210,170,255,.6);}
+.pan-btn small{color:var(--cyan);text-shadow:0 0 6px rgba(58,209,255,.5);}
+
+/* ── daily mission card: tappable CTA with gentle attention pulse ── */
+.mission-card{animation:gMissionPulse 3.4s ease-in-out infinite;}
+.mission-card:hover{transform:translateY(-2px);border-color:rgba(255,200,74,.55);}
+.mission-chest{filter:drop-shadow(0 2px 6px rgba(255,170,60,.5));}
+
+/* ── progress chips / inventory / achievements: gem tiles + unlock pop ── */
+.qchip{background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.02)),rgba(22,15,48,.6);box-shadow:var(--g-top),0 3px 8px rgba(0,0,0,.35);}
+.qchip.done{box-shadow:var(--g-top),0 0 14px rgba(94,255,160,.45);animation:gChipPop .4s ease;}
+.inv-slot.filled{box-shadow:var(--g-top),0 0 14px rgba(94,255,160,.4);}
+.ach-item.got{box-shadow:var(--g-top),0 0 16px rgba(255,200,74,.28);}
+
+/* ── world cards: framed RPG menu tiles ── */
+.world-card{box-shadow:var(--g-drop),var(--g-top),inset 0 -1px 0 rgba(0,0,0,.5);}
+.world-card:not(.locked):hover{box-shadow:0 16px 40px rgba(124,58,237,.45),0 0 22px rgba(168,85,247,.4),var(--g-top);}
+.world-card:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(58,209,255,.55),var(--g-drop);}
+.world-num{box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 2px 6px rgba(0,0,0,.5);}
+
+/* ── settings toggle: metallic track + glossy knob ── */
+.set-switch{box-shadow:inset 0 1px 4px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.08);}
+.set-switch::after{box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.7);}
+.set-switch:checked{box-shadow:inset 0 1px 4px rgba(0,0,0,.4),0 0 14px rgba(58,209,255,.45);}
+
+/* ── toasts (item get / achievement) + success stars: celebratory ── */
+#toast{box-shadow:0 16px 44px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.35),0 0 26px rgba(255,200,74,.3);}
+#toast.show{animation:gToastPop .42s cubic-bezier(.2,.8,.3,1.2);}
+#success-stars .ico{filter:drop-shadow(0 0 10px rgba(255,213,74,.7));}
+.hud-timer{box-shadow:0 10px 26px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.25),0 0 20px rgba(255,120,143,.35);}
+
+/* ── companion (도티) gets a soft console glow ── */
+.doti{box-shadow:0 0 22px rgba(58,209,255,.45),inset 0 1px 0 rgba(255,255,255,.25);}
+
+/* ── respect reduced motion (in addition to in-game toggle) ── */
+@media (prefers-reduced-motion: reduce){
+  .mission-card,#toast.show,.qchip.done,.btn-start::after,.btn-primary::after{animation:none !important;}
+  *{transition-duration:.001ms !important;}
+}
 </style>
 </head>
 <body>
