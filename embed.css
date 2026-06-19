@@ -1,0 +1,46 @@
+/* ============================================================
+   ShapeCraft by Dot — 임베드 한정 레이아웃 (html.is-embed / html.no-preview)
+   단독 실행 화면(클래스 없음)은 전혀 건드리지 않음. embed.js가 클래스를 토글.
+   ============================================================ */
+
+/* ---- 풀필: iframe 안에서 여백/스크롤바 없이 꽉 채우기 ---- */
+html.is-embed, html.is-embed body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;            /* 임베드에서 스크롤 금지 */
+}
+html.is-embed { scrollbar-width: none; }
+html.is-embed::-webkit-scrollbar { display: none; }
+
+/* 허브(메뉴)와 게임 화면 모두 뷰포트 풀필 */
+html.is-embed #hub {
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+html.is-embed #game {
+  position: fixed;
+  inset: 0;
+}
+
+/* ---- 프리뷰 dock(화면상 Dot Pad 미니맵) 숨김: ?preview=0 ----
+   하드웨어 출력(app.tactile → DotPad.display)은 그대로 동작.
+   공간까지 사라지도록 display:none. */
+html.is-embed.no-preview .dotpad-panel,
+html.is-embed.no-preview .hud-dotpad {
+  display: none !important;
+}
+
+/* ---- compact: 좁은 모달에서 허브 헤더/여백 축소 ?controls=compact ---- */
+html.is-embed.controls-compact .hub-header {
+  padding-block: 0.4rem;
+}
+html.is-embed.controls-compact .hub-header .tagline,
+html.is-embed.controls-compact .hub-header p {
+  display: none;             /* 부제는 좁은 화면에서 생략 */
+}
+
+/* 매우 좁은 임베드(모달 폭 작을 때) 안전장치 */
+@media (max-width: 560px) {
+  html.is-embed .hub-header { padding-block: 0.4rem; }
+}

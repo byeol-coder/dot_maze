@@ -1,0 +1,23 @@
+<!--
+  ShapeCraft 임베드 통합 — index.html <head>에 추가할 정확한 2줄.
+  인라인 게임 <script>(파일 하단)보다 반드시 "먼저" 로드되어야 합니다.
+  권장 위치: <head> 안, 인라인 <style> 바로 앞.
+-->
+<link rel="stylesheet" href="embed.css">
+<script src="embed.js"></script>
+
+<!--
+  적용 후 <head> 예시:
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>ShapeCraft by Dot</title>
+    ... (manifest, theme-color 등) ...
+
+    <link rel="stylesheet" href="embed.css">   <-- 추가
+    <script src="embed.js"></script>            <-- 추가
+
+    <style> ... 게임 인라인 CSS ... </style>
+  </head>
+-->
