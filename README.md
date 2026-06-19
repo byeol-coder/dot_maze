@@ -49,6 +49,7 @@ A tactile sandbox math game for visually impaired children — *explore shapes w
 | F1 / F2 (기능키) | 위·아래 이동 |
 | F3 | 수집·주변 읽기·도형 선택 |
 | F4 | 주변 스캔(소나) |
+| ? (또는 도움말 버튼) | 목표·조작·다음 할 일 음성 안내 |
 | ↑↓←→ / WASD (데스크톱 보조) | 이동 |
 | Space / Enter | 상호작용 |
 | H | 힌트 (목표 방향 + 소리) · R | 마지막 TTS 반복 |

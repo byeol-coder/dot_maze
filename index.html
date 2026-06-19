@@ -540,6 +540,7 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
         <div class="hud-xp-bar"><div class="hud-xp-fill" id="char-prog-fill" style="width:0%"></div></div>
       </div>
       <div class="hud-btns">
+        <button class="hud-icon-btn" id="btn-help" aria-label="도움말"><span data-icon="help"></span></button>
         <button class="hud-icon-btn" id="btn-hint" aria-label="힌트"><span data-icon="bulb"></span></button>
         <button class="hud-icon-btn" id="btn-lang" aria-label="언어 전환"><span data-icon="globe"></span><span class="hud-lang" id="lang-code">KO</span></button>
         <button class="hud-icon-btn" id="btn-settings-game" aria-label="설정"><span data-icon="gear"></span></button>
@@ -864,6 +865,7 @@ const ICONS = {
   back:'<path d="M14 5l-7 7 7 7"/>',
   door:'<rect x="6" y="3.5" width="12" height="17" rx="1.5"/><circle cx="14.5" cy="12" r="1" fill="currentColor" stroke="none"/>',
   diamond:'<path fill="currentColor" stroke="none" d="M12 4l8 8-8 8-8-8z"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.3 9.3a2.7 2.7 0 0 1 5.2 1c0 1.8-2.5 2-2.5 3.7"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/>',
   triangle:'<path fill="currentColor" stroke="none" d="M12 4.5l7.5 14H4.5z"/>',
   square:'<rect x="5.5" y="5.5" width="13" height="13" rx="1.5" fill="currentColor" stroke="none"/>',
   circle:'<circle cx="12" cy="12" r="7.5" fill="currentColor" stroke="none"/>',
@@ -907,7 +909,13 @@ const T = {
     patOk:'정답! 패턴을 맞췄어요!', patNo:'아니에요. 다시 생각해 보세요!',
     echoNear:(n)=>`출구가 ${n}칸 거리예요.`, echoHint:'출구 방향으로 소리가 울려요!',
     dirs:['북쪽','동쪽','남쪽','서쪽'], exit:'출구', blankName:'빈칸',
-    choosing:(name)=>`${name}? Space로 바꾸고, 한 번 더 누르면 선택해요.`,
+    choosing:(name)=>`${name}? 패턴에 맞는 도형이 아니에요. F3를 다시 눌러 다른 도형을 들어보세요.`,
+    patAllDone:'패턴을 모두 채웠어요! 이제 빛나는 문으로 가세요!',
+    helpControls:'왼쪽 오른쪽 화살표와 F1 위, F2 아래로 움직여요. F3로 줍거나 읽고, F4로 주변을 스캔해요.',
+    helpCollect:(n)=>`도형 ${n}개가 남았어요. 힌트 버튼을 누르면 가장 가까운 도형 방향이 소리로 들려요.`,
+    helpNumbers:(n)=>`숫자 ${n}을(를) 찾아 밟으세요. 1부터 차례대로예요.`,
+    helpPattern:(n)=>`빈칸 ${n}개가 남았어요. 빈칸으로 가서 F3로 도형을 고르면, 패턴에 맞는 도형일 때 자동으로 채워져요.`,
+    helpEcho:'눈을 감고 소리를 따라가요. F4로 스캔하면 출구 방향이 들려요.',
   },
   en:{
     tagline:'Explore shapes with sound, touch, and voice.', level:'Level', stars:'Stars', stars2:'Stars', badges:'Badges',
@@ -936,7 +944,13 @@ const T = {
     patOk:'Correct! Pattern complete!', patNo:'Not quite. Try again!',
     echoNear:(n)=>`Exit is ${n} steps away.`, echoHint:'The exit echoes toward you!',
     dirs:['North','East','South','West'], exit:'Exit', blankName:'Blank',
-    choosing:(name)=>`${name}? Space to change, press again to choose.`,
+    choosing:(name)=>`${name}? Not the pattern shape. Press F3 again to hear another shape.`,
+    patAllDone:'All patterns filled! Now head to the glowing gate!',
+    helpControls:'Move with Left/Right arrows and F1 up, F2 down. F3 picks up or reads, F4 scans around you.',
+    helpCollect:(n)=>`${n} shapes left. Press the hint button to hear the direction of the nearest shape.`,
+    helpNumbers:(n)=>`Find and step on number ${n}. In order from 1.`,
+    helpPattern:(n)=>`${n} blanks left. Go to a blank and press F3 to choose a shape — it fills in when it matches the pattern.`,
+    helpEcho:'Close your eyes and follow the sound. Press F4 to scan and hear the exit direction.',
   },
 };
 const t = (k,...a)=>{const v=T[lang][k];return typeof v==='function'?v(...a):(v||k);};
@@ -1443,6 +1457,7 @@ class InputController {
       if(e.key===' '||e.key==='Enter'){ if(this._modalOpen())return; e.preventDefault(); this.action(); }
       else if(e.key==='h'||e.key==='H'){ if(this._modalOpen())return; this.hint(); }
       else if(e.key==='q'||e.key==='Q'){ if(this._modalOpen())return; this.sonar(); }
+      else if(e.key==='?'){ if(this._modalOpen())return; if(this._active&&this.h.onHelp) this.h.onHelp(); }
       else if(e.key==='r'||e.key==='R'){ this.repeat(); }
     });
   }
@@ -1653,9 +1668,15 @@ class GameEngine {
   }
   _interact(cell,r,c){
     const s=SHAPE_INFO[cell];
-    if(s){ if(!this.collected.includes(cell)){ this.collected.push(cell); this.grid[r][c]=C.EMPTY;
-      this.audio.collect(cell); this.renderer.burst(r,c,s.color); this._dialogue(`${t('found',nameOf(cell))} ${lang==='ko'?s.ko.desc:s.en.desc}`);
-      this.score+=10; this._score(); this._challenge(); } return; }
+    if(s){
+      if(this.obj.type==='collect_shapes'){
+        if(!this.collected.includes(cell)){ this.collected.push(cell); this.grid[r][c]=C.EMPTY;
+          this.audio.collect(cell); this.renderer.burst(r,c,s.color); this._dialogue(`${t('found',nameOf(cell))} ${lang==='ko'?s.ko.desc:s.en.desc}`);
+          this.score+=10; this._score(); this._challenge(); }
+      } else { // pattern shapes are read aloud (a clue), not collected
+        this.audio.shape(cell,0); this.tts.speak(`${nameOf(cell)}.`,true);
+      }
+      return; }
     const n=NUMBER_INFO[cell];
     if(n && this.obj.type==='sequence_numbers'){ const exp=this.obj._next+1;
       if(n.num===exp){ this.obj._next++; this.grid[r][c]=C.EMPTY; this.audio.number(n.num); this.renderer.burst(r,c,'#a855f7');
@@ -1664,25 +1685,23 @@ class GameEngine {
         this.score+=10; this._score(); this._challenge();
       } else { this.audio.patNo(); this.tts.speak(t('numWrong',exp),true); }
       return; }
-    if(cell===C.BLANK){ this.audio.hint(); this._choice={r,c,opt:0}; this.tts.speak(t('blank'),true); }
+    if(cell===C.BLANK){ this.audio.hint(); this._choice={r,c,opt:-1};
+      const seq=[]; for(let cc=0;cc<this.grid[r].length;cc++){ const v=this.grid[r][cc]; if(SHAPE_INFO[v]) seq.push(nameOf(v)); }
+      const ctx=seq.length?(lang==='ko'?`패턴: ${seq.join(', ')}, 다음은? `:`Pattern: ${seq.join(', ')}, next? `):'';
+      this.tts.speak(ctx+t('blank'),true); }
   }
   action(){
     this.audio.resume();
     // pattern blank choice cycling
     if(this._choice && this.grid[this._choice.r][this._choice.c]===C.BLANK){
       const opts=[C.TRIANGLE,C.CIRCLE,C.SQUARE];
-      // first action announces, repeated actions cycle; long-press semantics simplified:
-      this._choice.opt=(this._choice.opt+1)%opts.length;
+      this._choice.opt=((this._choice.opt==null?-1:this._choice.opt)+1)%opts.length;
       const cand=opts[this._choice.opt];
-      const w=this.world; const key=`${this._choice.r},${this._choice.c}`;
-      const answer=w.patternAnswer?w.patternAnswer[key]:C.SQUARE;
-      // double-confirm: if candidate equals answer announce & on next same action confirm
-      this.audio.shape(cand);
-      this.tts.speak(t('choosing',nameOf(cand)),true);
-      this._choice.cand=cand; this._choice.answer=answer;
-      // auto-confirm when correct candidate chosen twice
-      if(this._choice.cand===this._choice.answer && this._choice._armed){ this._confirmPattern(); return; }
-      this._choice._armed=(this._choice.cand===this._choice.answer);
+      const key=`${this._choice.r},${this._choice.c}`;
+      const answer=(this.world.patternAnswer&&this.world.patternAnswer[key])||C.SQUARE;
+      this.audio.shape(cand); this._choice.answer=answer;
+      if(cand===answer){ this.tts.speak(`${nameOf(cand)}. ${t('patOk')}`,true); this._confirmPattern(); } // correct → auto-fill (friendly)
+      else this.tts.speak(t('choosing',nameOf(cand)),true);
       return;
     }
     const msgs=this._surround();
@@ -1691,8 +1710,16 @@ class GameEngine {
     else this.tts.speak(t('facing',t('dirs')[this.player.facing]),true);
   }
   _confirmPattern(){ const ch=this._choice; this.grid[ch.r][ch.c]=ch.answer; this.obj._filled++;
-    this.audio.patOk(); this.renderer.burst(ch.r,ch.c,'#5effa0'); this._dialogue(t('patOk')); this.score+=15; this._score(); this._challenge();
+    this.audio.patOk(); this.renderer.burst(ch.r,ch.c,'#5effa0'); this.score+=15; this._score(); this._challenge();
+    if(this.obj._filled>=this.obj.blanks) this._dialogue(t('patAllDone')); else this._dialogue(`${t('patOk')} ${t('needMore',this.obj.blanks-this.obj._filled)}`);
     this._choice=null; this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c,this.player.facing); }
+  // in-game help: objective + controls + a contextual next step (always available via ? button)
+  help(){ this.audio.resume(); const o=this.obj; let tip='';
+    if(o.type==='collect_shapes') tip=t('helpCollect',this._remaining());
+    else if(o.type==='sequence_numbers') tip=t('helpNumbers',(o._next||0)+1);
+    else if(o.type==='fill_patterns') tip=t('helpPattern',o.blanks-(o._filled||0));
+    else if(o.type==='echo_navigate') tip=t('helpEcho');
+    this.tts.speak(`${t('helpControls')} ${tip}`,true); }
   // Sonar scan — sweep N→E→S→W with directional pings + spoken report (key Q / button)
   sonar(){
     this.audio.resume(); Profile.data.sonarCount=(Profile.data.sonarCount||0)+1; Profile.save(); if(window.app) window.app._checkAchievements();
@@ -1842,7 +1869,7 @@ class App {
     this.engine=new GameEngine(this.audio,this.tts,this.tactile,this.renderer2d);
     this.input=new InputController({
       onMove:(dr,dc)=>this.engine.move(dr,dc), onAction:()=>this.engine.action(),
-      onHint:()=>this.engine.hint(), onRepeat:()=>this.tts.repeat(), onSonar:()=>this.engine.sonar(),
+      onHint:()=>this.engine.hint(), onRepeat:()=>this.tts.repeat(), onSonar:()=>this.engine.sonar(), onHelp:()=>this.engine.help(),
     });
     this.input.attachDotPad(null); // DOM-event bridge ready; pass real adapter when available
     this._worldIdx=0; this._highestUnlocked=0;
@@ -2113,6 +2140,7 @@ class App {
     document.getElementById('btn-tts').addEventListener('click',()=>{ const on=this.tts.toggle();
       Settings.data.tts=on; Settings.save(); this._reflectTTS(on); });
     document.getElementById('btn-hint').addEventListener('click',()=>this.engine.hint());
+    const bh=document.getElementById('btn-help'); if(bh) bh.addEventListener('click',()=>this.engine.help());
     ['btn-settings','btn-settings-game'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('click',()=>this._openSettings()); });
     const scanBtn=document.getElementById('btn-scan'); if(scanBtn) scanBtn.addEventListener('click',()=>this.engine.sonar());
     // Dot Pad connect (status badges + settings buttons)
