@@ -1812,9 +1812,9 @@ const Reminder = {
     let perm=Notification.permission;
     if(perm==='default'){ try{ perm=await Notification.requestPermission(); }catch(e){ perm=Notification.permission; } }
     if(perm!=='granted'){ Settings.data.reminderEnabled=false; Settings.save(); return perm; }
-    Settings.data.reminderEnabled=true; Settings.save(); this.schedule(); return 'granted';
+    Settings.data.reminderEnabled=true; Settings.save(); this.schedule(); PushSync.subscribe(); return 'granted';
   },
-  disable(){ Settings.data.reminderEnabled=false; Settings.save(); this._clear(); },
+  disable(){ Settings.data.reminderEnabled=false; Settings.save(); this._clear(); PushSync.unsubscribe(); },
   _clear(){ if(this._timer){ clearTimeout(this._timer); this._timer=null; } },
   _active(){ return Settings.data.reminderEnabled && this.supported() && Notification.permission==='granted'; },
   schedule(){ this._clear(); if(!this._active()) return;
@@ -1843,9 +1843,51 @@ const Reminder = {
   },
   init(){
     if(Settings.data.reminderEnabled && (!this.supported() || Notification.permission!=='granted')){ Settings.data.reminderEnabled=false; Settings.save(); }
-    if(this._active()){ this.schedule(); this.checkMissed(); }
+    if(this._active()){ this.schedule(); this.checkMissed(); PushSync.refresh(); }
     document.addEventListener('visibilitychange',()=>{ if(!document.hidden && this._active()){ this.schedule(); this.checkMissed(); } });
   },
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// BACKGROUND PUSH (Web Push + Cloudflare Worker) — fires even when the
+// app/PWA is fully closed. Optional: set PUSH_CONFIG.serverUrl to your
+// deployed Worker. Empty serverUrl → server push off, local Reminder still
+// works. State is mirrored to IndexedDB so the SW push handler can build the
+// localized text and suppress when today's daily is already done.
+// ═══════════════════════════════════════════════════════════════════
+const PUSH_CONFIG = {
+  serverUrl: '', // e.g. 'https://shapecraft-push.<you>.workers.dev' — set after deploying push-server/
+  vapidPublic: 'BNyGs4ya7DHTO6xZtWA7P-UY9U58F2Wn30oYkxV8EZC-bLHzGA3TMxsrW-8rPEZZbs3DyXGAQ47xiev07bUEIhc',
+};
+function idbOpen(){ return new Promise((res,rej)=>{ const r=indexedDB.open('shapecraft',1);
+  r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains('kv')) r.result.createObjectStore('kv'); };
+  r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function idbSet(k,v){ const db=await idbOpen(); return new Promise((res,rej)=>{ const tx=db.transaction('kv','readwrite'); tx.objectStore('kv').put(v,k); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+function urlB64ToU8(s){ const pad='='.repeat((4-s.length%4)%4); const b=(s+pad).replace(/-/g,'+').replace(/_/g,'/'); const raw=atob(b); const a=new Uint8Array(raw.length); for(let i=0;i<raw.length;i++)a[i]=raw.charCodeAt(i); return a; }
+const PushSync = {
+  ok(){ return !!PUSH_CONFIG.serverUrl && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; },
+  // mirror app state for the SW push handler (text language, streak, done-today, resubscribe info)
+  syncState(){ try{ idbSet('state', { lang, streak:Profile.data.streak||0, dailyDoneDate:Profile.data.dailyDoneDate||'',
+    time:Settings.data.reminderTime||'18:00', pushServer:PUSH_CONFIG.serverUrl, vapid:PUSH_CONFIG.vapidPublic }); }catch(e){} },
+  async subscribe(){ if(!this.ok() || Notification.permission!=='granted') return false;
+    try{ const reg=await navigator.serviceWorker.ready;
+      let sub=await reg.pushManager.getSubscription();
+      if(!sub) sub=await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: urlB64ToU8(PUSH_CONFIG.vapidPublic) });
+      this.syncState();
+      await fetch(PUSH_CONFIG.serverUrl+'/subscribe',{ method:'POST', headers:{'content-type':'application/json'},
+        body:JSON.stringify({ subscription: sub.toJSON?sub.toJSON():sub, time:Settings.data.reminderTime||'18:00', tzOffset:new Date().getTimezoneOffset(), lang }) });
+      return true;
+    }catch(e){ return false; }
+  },
+  async unsubscribe(){ if(!('serviceWorker' in navigator)) return;
+    try{ const reg=await navigator.serviceWorker.ready; const sub=await reg.pushManager.getSubscription();
+      if(sub){ if(PUSH_CONFIG.serverUrl){ try{ await fetch(PUSH_CONFIG.serverUrl+'/unsubscribe',{ method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ endpoint:sub.endpoint }) }); }catch(e){} }
+        try{ await sub.unsubscribe(); }catch(e){} }
+    }catch(e){}
+  },
+  // re-send subscription so the server has the latest time/tz/lang (call on enable, time change, return visit)
+  refresh(){ if(this._active()) this.subscribe(); },
+  _active(){ return this.ok() && Settings.data.reminderEnabled && Notification.permission==='granted'; },
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2280,7 +2322,7 @@ class App {
       else { Reminder.disable(); this._announce(t('reminderOff')); this.tts.speak(t('reminderOff'),true); }
       this._reflectReminder(); });
     document.getElementById('set-reminder-time').addEventListener('change',e=>{
-      Settings.data.reminderTime=e.target.value||'18:00'; Settings.save(); Reminder.schedule();
+      Settings.data.reminderTime=e.target.value||'18:00'; Settings.save(); Reminder.schedule(); PushSync.refresh();
       if(Settings.data.reminderEnabled) this._announce(t('reminderOn')); });
     document.getElementById('set-tutorial').addEventListener('click',()=>{ Profile.data.tutorialDone=false; Profile.save();
       this._announce(lang==='ko'?'튜토리얼을 다시 켰어요. 도형 숲에서 시작돼요.':'Tutorial reset. It will start in Shape Forest.'); });
@@ -2316,6 +2358,7 @@ class App {
       const nm=Profile.nextMilestone(); if(nm){ const left=nm.days-(d.streak||0);
         s+=(s?' · ':'')+(lang==='ko'?`'${nm.ko}'까지 ${left}일`:`${left} day${left>1?'s':''} to "${nm.en}"`); }
       ms.textContent=s; }
+    PushSync.syncState(); // keep the SW push handler's state fresh (streak / done-today / lang)
   }
   _dailyChallenge(){ const seed=hashDate(Profile.today()); const count=Math.max(1,(this._highestUnlocked||0)+1);
     const mods=['none','nohint','timed']; const modifier=mods[seed%3];

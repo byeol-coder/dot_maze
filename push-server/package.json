@@ -1,0 +1,14 @@
+{
+  "name": "shapecraft-push",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker that sends ShapeCraft daily-reminder web pushes (background, app-closed).",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}
