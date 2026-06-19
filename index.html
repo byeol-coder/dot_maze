@@ -550,9 +550,39 @@ button:disabled,.btn-sm:disabled,.btn-primary:disabled{filter:grayscale(.5) brig
 /* ── companion (도티) gets a soft console glow ── */
 .doti{box-shadow:0 0 22px rgba(58,209,255,.45),inset 0 1px 0 rgba(255,255,255,.25);}
 
+/* ── VICTORY / SUCCESS modal: staggered star reveal + gold rays + confetti ── */
+#success-modal .modal-kicker{font-size:14px;color:var(--gold);letter-spacing:.2em;text-shadow:0 0 16px rgba(255,200,74,.6);}
+#success-modal .modal-title{text-shadow:0 0 24px rgba(255,200,74,.3);}
+#success-stars{position:relative;display:flex;justify-content:center;gap:8px;}
+#success-stars::before{content:"";position:absolute;inset:-34px 0;z-index:-1;
+  background:radial-gradient(circle at 50% 50%,rgba(255,200,74,.30),transparent 64%);animation:gGlowPulse 1.7s ease-in-out infinite;}
+#success-stars .ico{filter:drop-shadow(0 0 13px rgba(255,213,74,.85));transform:scale(0);animation:gStarPop .55s cubic-bezier(.2,.9,.3,1.5) forwards;}
+#success-stars .ico:nth-child(1){animation-delay:.15s}
+#success-stars .ico:nth-child(2){animation-delay:.36s}
+#success-stars .ico:nth-child(3){animation-delay:.57s}
+@keyframes gStarPop{0%{transform:scale(0) rotate(-40deg);opacity:0}60%{transform:scale(1.32) rotate(10deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+@keyframes gGlowPulse{0%,100%{opacity:.5;transform:scale(.92)}50%{opacity:1;transform:scale(1.08)}}
+
+/* ── confetti burst overlay (pieces spawned in JS) ── */
+#confetti{position:fixed;inset:0;z-index:70;pointer-events:none;overflow:hidden;}
+.confetti-piece{position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;opacity:.95;will-change:transform;
+  box-shadow:0 0 6px rgba(255,255,255,.25);animation:gConfetti linear forwards;}
+@keyframes gConfetti{to{transform:translateY(112vh) rotate(720deg);opacity:.15}}
+
+/* ── WORLD SELECT: RPG quest-map tiles with staggered entrance ── */
+#ws-grid .world-card{height:118px;animation:gTileIn .42s cubic-bezier(.2,.8,.3,1.1) backwards;}
+#ws-grid .world-card:nth-child(1){animation-delay:.04s}#ws-grid .world-card:nth-child(2){animation-delay:.1s}
+#ws-grid .world-card:nth-child(3){animation-delay:.16s}#ws-grid .world-card:nth-child(4){animation-delay:.22s}
+#ws-grid .world-card:nth-child(5){animation-delay:.28s}#ws-grid .world-card:nth-child(6){animation-delay:.34s}
+@keyframes gTileIn{from{opacity:0;transform:translateY(16px) scale(.95)}to{opacity:1;transform:none}}
+#ws-grid .world-card.locked{filter:grayscale(.45) brightness(.85);}
+#ws-grid .world-card .world-num{box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 3px 8px rgba(0,0,0,.55);}
+
 /* ── respect reduced motion (in addition to in-game toggle) ── */
 @media (prefers-reduced-motion: reduce){
-  .mission-card,#toast.show,.qchip.done,.btn-start::after,.btn-primary::after{animation:none !important;}
+  .mission-card,#toast.show,.qchip.done,.btn-start::after,.btn-primary::after,
+  #success-stars .ico,#success-stars::before,#ws-grid .world-card,.confetti-piece{animation:none !important;}
+  #success-stars .ico{transform:none !important;}
   *{transition-duration:.001ms !important;}
 }
 </style>
@@ -817,6 +847,9 @@ button:disabled,.btn-sm:disabled,.btn-primary:disabled{filter:grayscale(.5) brig
 
 <!-- achievement / streak toast -->
 <div id="toast" role="status" aria-live="polite"></div>
+
+<!-- victory confetti overlay -->
+<div id="confetti" aria-hidden="true"></div>
 
 <div id="a11y-live" aria-live="assertive" aria-atomic="true" role="status"></div>
 
@@ -2136,6 +2169,13 @@ class App {
   _celebrate(text){ Haptic.buzz([0,40,40,40,40,90]); this._toast(text); this.tts.speak(text); }
   _toast(text){ const el=document.getElementById('toast'); if(!el)return; el.textContent=text; el.classList.add('show');
     clearTimeout(this._toastT); this._toastT=setTimeout(()=>el.classList.remove('show'),3400); }
+  _confetti(){ if(Settings.data.reduceMotion)return; const box=document.getElementById('confetti'); if(!box)return; box.innerHTML='';
+    const cols=['#ffd54a','#a855f7','#3ad1ff','#5effa0','#ff8af5','#ff768f'];
+    for(let i=0;i<30;i++){ const p=document.createElement('i'); p.className='confetti-piece';
+      p.style.left=Math.random()*100+'%'; p.style.background=cols[i%cols.length];
+      p.style.animationDuration=(1.4+Math.random()*1.5)+'s'; p.style.animationDelay=(Math.random()*0.35)+'s';
+      p.style.transform='rotate('+Math.floor(Math.random()*360)+'deg)'; box.appendChild(p); }
+    clearTimeout(this._confTimer); this._confTimer=setTimeout(()=>{ box.innerHTML=''; },3400); }
   _afterComplete(info){
     const w=info.world;
     document.getElementById('success-title-text').textContent=lang==='ko'?w.title.ko:w.title.en;
@@ -2155,6 +2195,7 @@ class App {
     const newAch=this._checkAchievements(true);
     this.refreshProfile();
     document.getElementById('success-modal').classList.remove('hidden'); document.getElementById('btn-next').focus();
+    this._confetti();
     setTimeout(()=>{ if(dailyMsg) this._celebrate(dailyMsg);
       newAch.forEach(a=>this._celebrate((lang==='ko'?'업적 달성: ':'Achievement: ')+(lang==='ko'?a.ko:a.en))); }, 1100);
   }
