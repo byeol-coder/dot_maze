@@ -295,6 +295,10 @@ button{font:inherit;cursor:pointer;}
 .status-toggle[aria-pressed="false"]{color:var(--muted);}
 
 /* ── control hints (bottom-center) ── */
+.hud-timer{top:74px;left:50%;transform:translateX(-50%);background:rgba(12,8,32,.78);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,120,143,.5);border-radius:14px;padding:8px 18px;font-size:22px;font-weight:950;color:#ff8a9c;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);}
+.hud-timer.hidden{display:none;}
 .hud-controls{bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:18px;
   background:rgba(12,8,32,.62);backdrop-filter:blur(10px);border:1px solid var(--card-border);border-radius:12px;padding:7px 16px;
   font-size:13px;color:var(--muted);font-weight:700;}
@@ -586,6 +590,7 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
       <span class="ctl"><kbd>F3</kbd> <span data-i="ctl_act">상호작용</span></span>
       <span class="ctl"><kbd>F4</kbd> <span data-i="ctl_scan">스캔</span></span>
     </div>
+    <div class="hud hud-timer hidden" id="timer" aria-live="polite"></div>
 
     <!-- screen-reader-only mirrors (kept for engine + a11y) -->
     <div id="inventory" class="sr-only"></div>
@@ -887,6 +892,7 @@ const T = {
     lg_you:'나', lg_target:'목표', voiceOn:'음성 켜짐', voiceOff:'음성 꺼짐',
     ctl_move:'이동', ctl_scan:'스캔', ctl_act:'상호작용', toHubMsg:'메인 화면으로 돌아왔어요.',
     set_haptic_int:'진동 세기', set_3d:'3D 입체 화면', set_dotpad:'Dot Pad 기기', achievements:'업적',
+    noHintMsg:'오늘은 힌트 없이 도전이에요!', timeLeft:(n)=>`${n}초 남았어요!`, timeUp:'시간 초과! 그래도 계속 탐험할 수 있어요.',
     next:'다음 월드', replay:'다시 하기', tohub:'메인으로', selectworld:'월드 선택', close:'닫기',
     locked:'잠김', wall:'벽이에요!', goalOpen:'출구예요! 들어가세요!',
     needMore:(n)=>`아직 ${n}개 더 남았어요!`,
@@ -915,6 +921,7 @@ const T = {
     lg_you:'You', lg_target:'Target', voiceOn:'Voice On', voiceOff:'Voice Off',
     ctl_move:'Move', ctl_scan:'Scan', ctl_act:'Interact', toHubMsg:'Back to the main screen.',
     set_haptic_int:'Vibration strength', set_3d:'3D view', set_dotpad:'Dot Pad device', achievements:'Achievements',
+    noHintMsg:'No hints today — you can do it!', timeLeft:(n)=>`${n} seconds left!`, timeUp:'Time up! You can still keep exploring.',
     next:'Next World', replay:'Retry', tohub:'Home', selectworld:'Select World', close:'Close',
     locked:'Locked', wall:'Wall!', goalOpen:'Exit! Go through!',
     needMore:(n)=>`${n} more to go!`,
@@ -1574,7 +1581,14 @@ const DotPad = {
 class GameEngine {
   constructor(audio,tts,tactile,renderer){ this.audio=audio; this.tts=tts; this.tactile=tactile; this.renderer=renderer;
     this.worldIdx=0; this.grid=[]; this.player={r:1,c:1,facing:2}; this.collected=[]; this.score=0; this.obj=null;
-    this._tick=0; this._raf=null; this._beacon=null; this._choice=null; }
+    this._tick=0; this._raf=null; this._beacon=null; this._choice=null; this.modifier=null; this._timerInt=null; }
+  setModifier(m){ this.modifier=m; }
+  _startTimer(secs){ this._stopTimer(); this._timeLeft=secs; this._timeOK=null;
+    const el=document.getElementById('timer'); if(el){ el.classList.remove('hidden'); el.textContent=`⏱ ${secs}`; }
+    this._timerInt=setInterval(()=>{ this._timeLeft--; const e=document.getElementById('timer'); if(e) e.textContent=`⏱ ${Math.max(0,this._timeLeft)}`;
+      if(this._timeLeft===20||this._timeLeft===10) this.tts.speak(t('timeLeft',this._timeLeft),true);
+      if(this._timeLeft<=0){ this._stopTimer(); this._timeOK=false; this.tts.speak(t('timeUp'),true); } },1000); }
+  _stopTimer(){ if(this._timerInt){ clearInterval(this._timerInt); this._timerInt=null; } const el=document.getElementById('timer'); if(el) el.classList.add('hidden'); }
   load(idx){ this.endless=false; this.worldIdx=idx; this._applyWorld(WORLDS[idx], idx); }
   loadEndless(depth){ this.endless=true; this._endlessDepth=depth; this.worldIdx=0; this._applyWorld(genEndless(depth), 2); }
   _applyWorld(w, ambientIdx){
@@ -1587,6 +1601,8 @@ class GameEngine {
     document.getElementById('game-world-name').textContent=lang==='ko'?w.title.ko:w.title.en;
     this._score(); this._hud(); this._charCard(); this._challenge(); this._scheduleBeacon();
     this.audio.startAmbient(ambientIdx); this.audio.setReverb(ambientIdx); this.audio.setListener(this.player.r,this.player.c,this.player.facing);
+    this._stopTimer(); this._timeOK=null;
+    if(this.modifier==='timed'){ this._startTimer(this._timeLimit||60); }
   }
   move(dr,dc){
     this.audio.resume();
@@ -1681,6 +1697,7 @@ class GameEngine {
   }
   hint(){
     this.audio.resume(); const obj=this.obj;
+    if(this.modifier==='nohint'){ this.audio.patNo(); this.tts.speak(t('noHintMsg'),true); return; }
     if(obj.type==='echo_navigate'){ const g=this._find(C.GOAL); const dr=g.r-this.player.r,dc=g.c-this.player.c;
       this.audio.echo3d(g.r,g.c); this.tts.speak(t('hintMsg',t('exit'),dr,dc),true); return; }
     if(obj.type==='fill_patterns'){ const b=this._find(C.BLANK); if(b){ const dr=b.r-this.player.r,dc=b.c-this.player.c;
@@ -1713,7 +1730,8 @@ class GameEngine {
     if(this.endless){ const d=this._endlessDepth||1; if(d>(Profile.data.endlessBest||0)) Profile.data.endlessBest=d; Profile.addStars(5+d*2); }
     else { Profile.award(w.id, w.max); }
     if(this._beacon) clearInterval(this._beacon);
-    if(window.app) window.app._afterComplete({ endless:this.endless, worldIdx:this.worldIdx, depth:this._endlessDepth, world:w });
+    const timeOK = this.modifier==='timed' ? (this._timeLeft>0) : null; this._stopTimer();
+    if(window.app) window.app._afterComplete({ endless:this.endless, worldIdx:this.worldIdx, depth:this._endlessDepth, world:w, modifier:this.modifier, timeOK });
   }
   _hud(){
     const dirs=t('dirs');
@@ -1786,7 +1804,7 @@ class GameEngine {
   start(){ const loop=()=>{ this._tick++; const w=this.world;
     this.renderer.draw({grid:this.grid,player:this.player,theme:w?w.theme:{},collected:this.collected,obj:this.obj},this._tick);
     this._raf=requestAnimationFrame(loop); }; this._raf=requestAnimationFrame(loop); }
-  stop(){ if(this._raf) cancelAnimationFrame(this._raf); if(this._beacon) clearInterval(this._beacon); this.audio.stopAmbient(); }
+  stop(){ if(this._raf) cancelAnimationFrame(this._raf); if(this._beacon) clearInterval(this._beacon); this._stopTimer(); this.audio.stopAmbient(); }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1902,15 +1920,19 @@ class App {
     for(let i=0;i<WORLDS.length;i++){ if(i===0||(d.worldStars[WORLDS[i-1].id]||0)>0) this._highestUnlocked=i; else break; }
     this._buildWorlds();
     // daily challenge + streak
-    const daily=this._dailyChallenge(); this._dailyIdx=daily.idx; this._dailyReward=daily.reward;
+    const daily=this._dailyChallenge(); this._dailyIdx=daily.idx; this._dailyReward=daily.reward; this._dailyMod=daily.modifier; this._dailyTimeLimit=daily.timeLimit;
     const dw=WORLDS[daily.idx], doneToday=d.dailyDoneDate===Profile.today();
+    const modLabel=this._modLabel(daily.modifier);
     const mt=document.getElementById('mission-text'); if(mt) mt.textContent = doneToday
       ? (lang==='ko'?'오늘의 도전 완료! 내일 또 만나요.':'Daily done — see you tomorrow!')
-      : (lang==='ko'?`${dw.title.ko}을(를) 클리어하세요`:`Clear ${dw.title.en}`);
+      : ((lang==='ko'?`${dw.title.ko} 클리어`:`Clear ${dw.title.en}`) + (modLabel?` · ${modLabel}`:''));
     const mrv=document.getElementById('mission-reward-val'); if(mrv) mrv.textContent=daily.reward;
     const ms=document.getElementById('mission-streak'); if(ms) ms.textContent=(d.streak||0)>0?(lang==='ko'?`🔥 ${d.streak}일 연속`:`🔥 ${d.streak}-day streak`):'';
   }
-  _dailyChallenge(){ const count=Math.max(1,(this._highestUnlocked||0)+1); const idx=hashDate(Profile.today())%count; return {idx, reward:15}; }
+  _dailyChallenge(){ const seed=hashDate(Profile.today()); const count=Math.max(1,(this._highestUnlocked||0)+1);
+    const mods=['none','nohint','timed']; const modifier=mods[seed%3];
+    return {idx:seed%count, modifier, reward:15, timeLimit:60}; }
+  _modLabel(m){ return m==='nohint'?(lang==='ko'?'힌트 없이':'No Hints'):m==='timed'?(lang==='ko'?'60초 도전':'60s Time Attack'):''; }
   _checkAchievements(defer){ const newly=[]; ACHIEVEMENTS.forEach(a=>{ if(!Profile.hasAch(a.id)&&a.check(Profile.data)){ Profile.addAch(a.id); newly.push(a); } });
     if(newly.length){ this.refreshProfile(); if(!defer) newly.forEach(a=>this._celebrate((lang==='ko'?'업적 달성: ':'Achievement: ')+(lang==='ko'?a.ko:a.en))); }
     return newly; }
@@ -1927,8 +1949,12 @@ class App {
     document.getElementById('btn-next').style.display=this._next?'':'none';
     let dailyMsg='';
     if(!info.endless && info.worldIdx===this._dailyIdx){ const r=Profile.markDailyDone();
-      if(r.firstToday){ Profile.addStars(this._dailyReward||15);
-        dailyMsg=(lang==='ko'?`오늘의 도전 완료! ${r.streak}일 연속! 별 +${this._dailyReward}`:`Daily done! ${r.streak}-day streak! +${this._dailyReward} stars`); } }
+      if(r.firstToday){ let rew=this._dailyReward||15;
+        if(info.modifier==='nohint') rew+=5;
+        if(info.modifier==='timed') rew+= info.timeOK?10:0;
+        Profile.addStars(rew);
+        const extra = info.modifier==='timed' ? (info.timeOK?(lang==='ko'?' 시간 안에 성공!':' Beat the clock!'):(lang==='ko'?' (시간 초과)':' (over time)')) : '';
+        dailyMsg=(lang==='ko'?`오늘의 도전 완료! ${r.streak}일 연속! 별 +${rew}${extra}`:`Daily done! ${r.streak}-day streak! +${rew} stars${extra}`); } }
     const newAch=this._checkAchievements(true);
     this.refreshProfile();
     document.getElementById('success-modal').classList.remove('hidden'); document.getElementById('btn-next').focus();
@@ -1945,7 +1971,7 @@ class App {
     document.getElementById('hub').classList.add('hidden');
     document.getElementById('game').classList.remove('hidden');
     this.input.setActive(true);
-    this.engine.loadEndless(depth); this.engine.start();
+    this.engine.setModifier(null); this.engine.loadEndless(depth); this.engine.start();
     this.tactile.update(this.engine.grid,this.engine.player.r,this.engine.player.c,this.engine.player.facing);
     document.getElementById('canvas-wrap').focus(); this.renderer.fit();
     const w=this.engine.world;
@@ -2016,12 +2042,16 @@ class App {
     document.getElementById('hub').classList.add('hidden');
     document.getElementById('game').classList.remove('hidden');
     this.input.setActive(true);
+    // apply today's daily modifier only when starting the (not-yet-done) daily world
+    const isDaily = idx===this._dailyIdx && Profile.data.dailyDoneDate!==Profile.today() && this._dailyMod && this._dailyMod!=='none';
+    this.engine._timeLimit=this._dailyTimeLimit||60; this.engine.setModifier(isDaily?this._dailyMod:null);
     this.engine.load(idx); this.engine.start();
     this.tactile.update(this.engine.grid,this.engine.player.r,this.engine.player.c,this.engine.player.facing);
     document.getElementById('canvas-wrap').focus(); this.renderer.fit();
     const w=WORLDS[idx];
-    this._announce(`${lang==='ko'?w.title.ko:w.title.en}. ${lang==='ko'?w.objective.description.ko:w.objective.description.en}`);
-    setTimeout(()=>this.engine._dialogue(lang==='ko'?STORY[w.id].intro.ko:STORY[w.id].intro.en),450);
+    const modMsg = isDaily ? (lang==='ko'?` 오늘의 도전: ${this._modLabel(this._dailyMod)}!`:` Daily: ${this._modLabel(this._dailyMod)}!`) : '';
+    this._announce(`${lang==='ko'?w.title.ko:w.title.en}. ${lang==='ko'?w.objective.description.ko:w.objective.description.en}${modMsg}`);
+    setTimeout(()=>this.engine._dialogue((lang==='ko'?STORY[w.id].intro.ko:STORY[w.id].intro.en)+modMsg),450);
   }
   _toHub(){
     this.input.setActive(false); this.engine.stop(); speechSynthesis.cancel();
