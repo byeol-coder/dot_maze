@@ -69,6 +69,12 @@ button{font:inherit;cursor:pointer;}
   background-size:cover;background-position:center 8%;}
 .player-meta{display:flex;flex-direction:column;gap:3px;min-width:150px;}
 .player-name{font-size:16px;font-weight:900;color:#fff;}
+.player-title{display:inline-flex;align-items:center;gap:5px;margin:3px 0 1px;padding:2px 9px;border-radius:99px;
+  font-size:11px;font-weight:900;letter-spacing:.2px;color:#1a1030;
+  background:linear-gradient(135deg,#ffe07a,#ffb43a);border:1px solid rgba(255,255,255,.5);
+  box-shadow:0 1px 4px rgba(255,170,40,.45),inset 0 1px 0 rgba(255,255,255,.6);}
+.player-title::before{content:"★";font-size:10px;}
+body.hc .player-title{background:#ffd54a;color:#000;border-color:#000;}
 .player-level{font-size:12px;color:var(--muted);}
 .xp-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:3px;}
 .xp-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--neon));border-radius:99px;transition:width .5s;}
@@ -615,6 +621,7 @@ button:disabled,.btn-sm:disabled,.btn-primary:disabled{filter:grayscale(.5) brig
       <div class="player-avatar" id="player-avatar"></div>
       <div class="player-meta">
         <div class="player-name" id="player-name">Dot Explorer</div>
+        <div class="player-title" id="player-title" hidden></div>
         <div class="player-level"><span data-i="level">레벨</span> <span id="player-level">1</span></div>
         <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
         <div class="xp-text" id="xp-text">0 / 100 XP</div>
@@ -1081,6 +1088,7 @@ const T = {
     welcome:'ShapeCraft에 오신 걸 환영해요. 음성 안내가 켜져 있어요. 끄거나 바꾸려면 설정을 여세요.',
     greetBack:'다시 왔네요, 반가워요!', greetStreak:(n)=>`${n}일 연속 중이에요. 오늘 도전하면 이어져요!`,
     greetStart:'모험 시작 버튼이 선택돼 있어요. 스페이스나 엔터로 바로 시작하세요.',
+    greetTitle:(name)=>`${name}님,`, greetReward:(n,name)=>`'${name}' 칭호까지 ${n}일 남았어요.`,
     set_reminder:'매일 알림', set_reminder_time:'알림 시간',
     reminderTitle:'오늘의 도전이 기다려요!', reminderBody:'ShapeCraft에서 오늘의 도형 모험을 시작해 보세요.',
     reminderStreakBody:(n)=>`${n}일 연속 중이에요! 오늘도 도전하면 이어져요.`,
@@ -1131,6 +1139,7 @@ const T = {
     welcome:'Welcome to ShapeCraft. Voice guidance is on. You can turn it off or change it in Settings.',
     greetBack:'Welcome back!', greetStreak:(n)=>`You're on a ${n}-day streak. Play today to keep it going!`,
     greetStart:'The Start button is selected. Press Space or Enter to begin right away.',
+    greetTitle:(name)=>`${name},`, greetReward:(n,name)=>`${n} day${n>1?'s':''} to the "${name}" title.`,
     set_reminder:'Daily reminder', set_reminder_time:'Reminder time',
     reminderTitle:'Your daily challenge awaits!', reminderBody:'Start today’s shape adventure in ShapeCraft.',
     reminderStreakBody:(n)=>`You're on a ${n}-day streak! Play today to keep it going.`,
@@ -1692,7 +1701,8 @@ window.ShapeCraftInput = { pan:(d)=>window.dispatchEvent(new CustomEvent('dotpad
 // ═══════════════════════════════════════════════════════════════════
 const Profile = {
   data:{ stars:0, worldStars:{}, badges:0, xp:0, bonusStars:0,
-    streak:0, lastDailyDate:'', dailyDoneDate:'', achievements:[], plays:0, sonarCount:0, endlessBest:0, tutorialDone:false, welcomed:false },
+    streak:0, lastDailyDate:'', dailyDoneDate:'', achievements:[], plays:0, sonarCount:0, endlessBest:0, tutorialDone:false, welcomed:false,
+    streakMilestones:[], title:'' },
   load(){ try{ const s=localStorage.getItem('shapecraft_profile'); if(s) this.data={...this.data,...JSON.parse(s)}; }catch(e){} },
   save(){ try{ localStorage.setItem('shapecraft_profile',JSON.stringify(this.data)); }catch(e){} },
   level(){ return Math.floor(this.data.xp/100)+1; },
@@ -1711,6 +1721,14 @@ const Profile = {
     return {firstToday:true, streak:this.data.streak}; },
   hasAch(id){ return (this.data.achievements||[]).includes(id); },
   addAch(id){ if(!this.hasAch(id)){ this.data.achievements.push(id); this.save(); return true; } return false; },
+  // claim every streak milestone now reached but not yet rewarded; returns the newly-claimed ones
+  claimMilestones(){ const s=this.data.streak||0; const got=this.data.streakMilestones||(this.data.streakMilestones=[]);
+    const newly=STREAK_MILESTONES.filter(m=> s>=m.days && !got.includes(m.days));
+    if(newly.length){ newly.forEach(m=>{ got.push(m.days); this.data.bonusStars=(this.data.bonusStars||0)+m.stars; this.data.xp+=m.stars*4; });
+      const top=got.slice().sort((a,b)=>b-a)[0]; const tm=STREAK_MILESTONES.find(m=>m.days===top); if(tm) this.data.title=tm.id;
+      this._recalc(); this.save(); }
+    return newly; },
+  nextMilestone(){ const s=this.data.streak||0; return STREAK_MILESTONES.find(m=>m.days>s)||null; },
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1726,6 +1744,17 @@ const ACHIEVEMENTS=[
   {id:'sonar20',     ko:'소나 마스터', en:'Sonar Master',    dko:'스캔 20번 사용',   den:'Use scan 20 times', check:p=>(p.sonarCount||0)>=20},
   {id:'endless5',    ko:'끝없는 탐험가', en:'Endless Explorer', dko:'끝없는 탐험 5층 도달', den:'Reach endless depth 5', check:p=>(p.endlessBest||0)>=5},
 ];
+
+// Streak milestones — claimed when the daily-challenge streak reaches each day count.
+// Gives bonus stars + an escalating spoken title (the player's identity), to make a
+// long streak feel worth protecting. Distinct from streak achievements (those are badges).
+const STREAK_MILESTONES=[
+  {days:3,  stars:5,  id:'t_steady', ko:'꾸준한 탐험가', en:'Steady Explorer'},
+  {days:7,  stars:10, id:'t_week',   ko:'한 주의 영웅',   en:'Hero of the Week'},
+  {days:14, stars:20, id:'t_friend', ko:'도형의 친구',   en:'Friend of Shapes'},
+  {days:30, stars:40, id:'t_legend', ko:'전설의 탐험가', en:'Legendary Explorer'},
+];
+function milestoneTitle(id){ const m=STREAK_MILESTONES.find(x=>x.id===id); return m?(lang==='ko'?m.ko:m.en):''; }
 
 // ═══════════════════════════════════════════════════════════════════
 // PROCEDURAL MAZE (endless mode) — recursive backtracker, always solvable
@@ -2150,8 +2179,10 @@ class App {
   }
   _fillHowto(){ const el=document.getElementById('sr-howto'); if(el) el.textContent=t('srHowto'); }
   _greetText(){ const d=Profile.data; const parts=[];
+    if(d.welcomed && d.title) parts.push(t('greetTitle', milestoneTitle(d.title)));
     parts.push(d.welcomed ? t('greetBack') : t('welcome'));
-    if((d.streak||0)>0 && d.dailyDoneDate!==Profile.today()) parts.push(t('greetStreak', d.streak));
+    if((d.streak||0)>0 && d.dailyDoneDate!==Profile.today()){ parts.push(t('greetStreak', d.streak));
+      const nm=Profile.nextMilestone(); if(nm) parts.push(t('greetReward', nm.days-(d.streak||0), milestoneTitle(nm.id))); }
     parts.push(t('greetStart'));
     return parts.join(' '); }
   _welcomeOnce(){ // session greeting on first gesture (audio needs a user gesture); orients + offers one-key start
@@ -2263,6 +2294,8 @@ class App {
     document.getElementById('stat-stars').textContent=d.stars;
     document.getElementById('stat-badges').textContent=d.badges;
     document.getElementById('player-level').textContent=Profile.level();
+    const ptEl=document.getElementById('player-title');
+    if(ptEl){ const tt=d.title?milestoneTitle(d.title):''; if(tt){ ptEl.textContent=tt; ptEl.hidden=false; ptEl.setAttribute('aria-label',(lang==='ko'?'칭호: ':'Title: ')+tt); } else { ptEl.hidden=true; ptEl.textContent=''; } }
     const xpInLevel=d.xp%100;
     document.getElementById('xp-fill').style.width=xpInLevel+'%';
     document.getElementById('xp-text').textContent=`${xpInLevel} / 100 XP`;
@@ -2279,7 +2312,10 @@ class App {
       ? (lang==='ko'?'오늘의 도전 완료! 내일 또 만나요.':'Daily done — see you tomorrow!')
       : ((lang==='ko'?`${dw.title.ko} 클리어`:`Clear ${dw.title.en}`) + (modLabel?` · ${modLabel}`:''));
     const mrv=document.getElementById('mission-reward-val'); if(mrv) mrv.textContent=daily.reward;
-    const ms=document.getElementById('mission-streak'); if(ms) ms.textContent=(d.streak||0)>0?(lang==='ko'?`🔥 ${d.streak}일 연속`:`🔥 ${d.streak}-day streak`):'';
+    const ms=document.getElementById('mission-streak'); if(ms){ let s=(d.streak||0)>0?(lang==='ko'?`🔥 ${d.streak}일 연속`:`🔥 ${d.streak}-day streak`):'';
+      const nm=Profile.nextMilestone(); if(nm){ const left=nm.days-(d.streak||0);
+        s+=(s?' · ':'')+(lang==='ko'?`'${nm.ko}'까지 ${left}일`:`${left} day${left>1?'s':''} to "${nm.en}"`); }
+      ms.textContent=s; }
   }
   _dailyChallenge(){ const seed=hashDate(Profile.today()); const count=Math.max(1,(this._highestUnlocked||0)+1);
     const mods=['none','nohint','timed']; const modifier=mods[seed%3];
@@ -2306,19 +2342,24 @@ class App {
     if(info.endless){ this._next={type:'endless',depth:(info.depth||1)+1}; }
     else { const nx=info.worldIdx+1; this._next=nx<WORLDS.length?{type:'world',idx:nx}:null; }
     document.getElementById('btn-next').style.display=this._next?'':'none';
-    let dailyMsg='';
+    let dailyMsg=''; let milestoneMsgs=[];
     if(!info.endless && info.worldIdx===this._dailyIdx){ const r=Profile.markDailyDone();
       if(r.firstToday){ let rew=this._dailyReward||15;
         if(info.modifier==='nohint') rew+=5;
         if(info.modifier==='timed') rew+= info.timeOK?10:0;
         Profile.addStars(rew);
         const extra = info.modifier==='timed' ? (info.timeOK?(lang==='ko'?' 시간 안에 성공!':' Beat the clock!'):(lang==='ko'?' (시간 초과)':' (over time)')) : '';
-        dailyMsg=(lang==='ko'?`오늘의 도전 완료! ${r.streak}일 연속! 별 +${rew}${extra}`:`Daily done! ${r.streak}-day streak! +${rew} stars${extra}`); } }
+        dailyMsg=(lang==='ko'?`오늘의 도전 완료! ${r.streak}일 연속! 별 +${rew}${extra}`:`Daily done! ${r.streak}-day streak! +${rew} stars${extra}`);
+        const ms=Profile.claimMilestones();
+        milestoneMsgs=ms.map(m=> lang==='ko'
+          ? `${m.days}일 연속 달성! '${m.ko}' 칭호를 얻었어요. 별 +${m.stars}!`
+          : `${m.days}-day streak! You earned the title "${m.en}". +${m.stars} stars!`); } }
     const newAch=this._checkAchievements(true);
     this.refreshProfile();
     document.getElementById('success-modal').classList.remove('hidden'); document.getElementById('btn-next').focus();
     this._confetti();
     setTimeout(()=>{ if(dailyMsg) this._celebrate(dailyMsg);
+      milestoneMsgs.forEach((m,i)=>setTimeout(()=>{ this._confetti(); this._celebrate(m); }, 1400*(i+1)));
       newAch.forEach(a=>this._celebrate((lang==='ko'?'업적 달성: ':'Achievement: ')+(lang==='ko'?a.ko:a.en))); }, 1100);
   }
   _doNext(){ document.getElementById('success-modal').classList.add('hidden'); const n=this._next;
