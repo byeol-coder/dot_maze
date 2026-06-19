@@ -355,7 +355,7 @@ button{font:inherit;cursor:pointer;}
 .ws-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 
 /* settings modal */
-.set-list{display:flex;flex-direction:column;gap:4px;}
+.set-list{display:flex;flex-direction:column;gap:4px;max-height:64vh;overflow-y:auto;}
 .set-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 4px;
   border-bottom:1px solid var(--card-border);font-size:16px;font-weight:700;color:var(--text);cursor:pointer;}
 .set-switch{appearance:none;width:50px;height:28px;border-radius:99px;background:rgba(255,255,255,.14);
@@ -652,6 +652,10 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
     <div class="modal-kicker" data-icon="gear" data-icon-size="22"></div>
     <h2 class="modal-title" id="set-title" data-i="settings">설정</h2>
     <div class="set-list">
+      <label class="set-row"><span data-i="set_easy">쉬운 모드 (가이드)</span>
+        <input type="checkbox" id="set-easy" class="set-switch"></label>
+      <div class="set-row"><span data-i="set_tutorial">튜토리얼</span>
+        <button class="set-dp-btn" id="set-tutorial"><span data-i="set_tutorial_btn">다시 보기</span></button></div>
       <label class="set-row"><span data-i="set_tts">음성 안내</span>
         <input type="checkbox" id="set-tts" class="set-switch"></label>
       <label class="set-row"><span data-i="set_haptic">진동</span>
@@ -897,6 +901,11 @@ const T = {
     ctl_move:'이동', ctl_scan:'스캔', ctl_act:'상호작용', toHubMsg:'메인 화면으로 돌아왔어요.',
     set_haptic_int:'진동 세기', set_3d:'3D 입체 화면', set_dotpad:'Dot Pad 기기', achievements:'업적',
     noHintMsg:'오늘은 힌트 없이 도전이에요!', timeLeft:(n)=>`${n}초 남았어요!`, timeUp:'시간 초과! 그래도 계속 탐험할 수 있어요.',
+    set_easy:'쉬운 모드 (가이드)', set_tutorial:'튜토리얼', set_tutorial_btn:'다시 보기',
+    tut_move:'환영해요! 먼저 움직여 볼까요. 왼쪽·오른쪽 화살표나 F1, F2 키로 움직여 보세요.',
+    tut_scan:'잘했어요! 이제 F4(주변 스캔)를 눌러 주변을 소리로 살펴보세요.',
+    tut_collect:'좋아요! 이제 소리를 따라 도형에게 다가가 만나보세요.',
+    tut_ok:'잘했어요!', tut_end:'준비 끝! 도형 다섯을 모두 만나면 빛나는 문이 열려요. 막히면 도움말 버튼이나 물음표 키를 누르세요.',
     next:'다음 월드', replay:'다시 하기', tohub:'메인으로', selectworld:'월드 선택', close:'닫기',
     locked:'잠김', wall:'벽이에요!', goalOpen:'출구예요! 들어가세요!',
     needMore:(n)=>`아직 ${n}개 더 남았어요!`,
@@ -932,6 +941,11 @@ const T = {
     ctl_move:'Move', ctl_scan:'Scan', ctl_act:'Interact', toHubMsg:'Back to the main screen.',
     set_haptic_int:'Vibration strength', set_3d:'3D view', set_dotpad:'Dot Pad device', achievements:'Achievements',
     noHintMsg:'No hints today — you can do it!', timeLeft:(n)=>`${n} seconds left!`, timeUp:'Time up! You can still keep exploring.',
+    set_easy:'Easy mode (guided)', set_tutorial:'Tutorial', set_tutorial_btn:'Replay',
+    tut_move:'Welcome! Let’s move first. Use the Left/Right arrows or F1, F2 keys to move.',
+    tut_scan:'Nice! Now press F4 to scan and hear what’s around you.',
+    tut_collect:'Great! Now follow the sound and reach a shape to meet it.',
+    tut_ok:'Well done!', tut_end:'All set! Meet all five shapes to open the glowing gate. Stuck? Press the help button or the question-mark key.',
     next:'Next World', replay:'Retry', tohub:'Home', selectworld:'Select World', close:'Close',
     locked:'Locked', wall:'Wall!', goalOpen:'Exit! Go through!',
     needMore:(n)=>`${n} more to go!`,
@@ -1483,7 +1497,7 @@ window.ShapeCraftInput = { pan:(d)=>window.dispatchEvent(new CustomEvent('dotpad
 // ═══════════════════════════════════════════════════════════════════
 const Profile = {
   data:{ stars:0, worldStars:{}, badges:0, xp:0, bonusStars:0,
-    streak:0, lastDailyDate:'', dailyDoneDate:'', achievements:[], plays:0, sonarCount:0, endlessBest:0 },
+    streak:0, lastDailyDate:'', dailyDoneDate:'', achievements:[], plays:0, sonarCount:0, endlessBest:0, tutorialDone:false },
   load(){ try{ const s=localStorage.getItem('shapecraft_profile'); if(s) this.data={...this.data,...JSON.parse(s)}; }catch(e){} },
   save(){ try{ localStorage.setItem('shapecraft_profile',JSON.stringify(this.data)); }catch(e){} },
   level(){ return Math.floor(this.data.xp/100)+1; },
@@ -1546,7 +1560,7 @@ function hashDate(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt
 // SETTINGS (accessibility) + HAPTICS
 // ═══════════════════════════════════════════════════════════════════
 const Settings = {
-  data:{ tts:true, rate:0.94, volume:0.8, musicVolume:0.45, haptics:true, hapticIntensity:0.8, threeD:true, highContrast:false,
+  data:{ tts:true, rate:0.94, volume:0.8, musicVolume:0.45, haptics:true, hapticIntensity:0.8, threeD:true, easyMode:true, highContrast:false,
     reduceMotion:(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)||false },
   load(){ try{ const s=localStorage.getItem('shapecraft_settings'); if(s) this.data={...this.data,...JSON.parse(s)}; }catch(e){} },
   save(){ try{ localStorage.setItem('shapecraft_settings',JSON.stringify(this.data)); }catch(e){} },
@@ -1661,6 +1675,7 @@ class GameEngine {
     this.audio.setListener(this.player.r,this.player.c,this.player.facing);
     this.audio.move(dc*.6);
     this._interact(tgt,nr,nc); this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c,this.player.facing);
+    if(window.app) window.app._tut('move');
     // wall proximity: subtle cue when the path directly ahead is blocked
     const fa=DIR[this.player.facing], ar=this.player.r+fa.dr, ac=this.player.c+fa.dc;
     if(ar<0||ar>=this.grid.length||ac<0||ac>=this.grid[0].length||this.grid[ar][ac]===C.WALL){ this.audio.wallNear(fa.dc*.5); Haptic.buzz(10); }
@@ -1672,7 +1687,7 @@ class GameEngine {
       if(this.obj.type==='collect_shapes'){
         if(!this.collected.includes(cell)){ this.collected.push(cell); this.grid[r][c]=C.EMPTY;
           this.audio.collect(cell); this.renderer.burst(r,c,s.color); this._dialogue(`${t('found',nameOf(cell))} ${lang==='ko'?s.ko.desc:s.en.desc}`);
-          this.score+=10; this._score(); this._challenge(); }
+          this.score+=10; this._score(); this._challenge(); if(window.app) window.app._tut('collect'); }
       } else { // pattern shapes are read aloud (a clue), not collected
         this.audio.shape(cell,0); this.tts.speak(`${nameOf(cell)}.`,true);
       }
@@ -1722,7 +1737,7 @@ class GameEngine {
     this.tts.speak(`${t('helpControls')} ${tip}`,true); }
   // Sonar scan — sweep N→E→S→W with directional pings + spoken report (key Q / button)
   sonar(){
-    this.audio.resume(); Profile.data.sonarCount=(Profile.data.sonarCount||0)+1; Profile.save(); if(window.app) window.app._checkAchievements();
+    this.audio.resume(); Profile.data.sonarCount=(Profile.data.sonarCount||0)+1; Profile.save(); if(window.app){ window.app._checkAchievements(); window.app._tut('scan'); }
     this.tts.speak(t('sonarStart'),true); this.renderer.ring(this.player.r,this.player.c,'#3ad1ff');
     DIR.forEach((d,i)=>{ setTimeout(()=>{
       let dist=6, found=false;
@@ -1851,8 +1866,8 @@ class GameEngine {
         :o.type==='sequence_numbers'&&o._next<o.targets.length?[o.targets[o._next]]:[];
       let near=null,nd=99; targets.forEach(type=>{ for(let r=0;r<this.grid.length;r++) for(let c=0;c<this.grid[r].length;c++)
         if(this.grid[r][c]===type){ const dist=Math.abs(r-this.player.r)+Math.abs(c-this.player.c); if(dist<nd){nd=dist;near={type,r,c};} } });
-      if(near&&nd<=6) this.audio.beacon3d(near.type,near.r,near.c);
-    },2600); }
+      if(near&&nd<=(Settings.data.easyMode?9:6)) this.audio.beacon3d(near.type,near.r,near.c);
+    }, Settings.data.easyMode?1600:2600); }
   start(){ const loop=()=>{ this._tick++; const w=this.world;
     this.renderer.draw({grid:this.grid,player:this.player,theme:w?w.theme:{},collected:this.collected,obj:this.obj},this._tick);
     this._raf=requestAnimationFrame(loop); }; this._raf=requestAnimationFrame(loop); }
@@ -1937,6 +1952,7 @@ class App {
     document.getElementById('set-music').value=Settings.data.musicVolume;
     document.getElementById('set-haptic-int').value=Settings.data.hapticIntensity;
     document.getElementById('set-3d').checked=Settings.data.threeD;
+    document.getElementById('set-easy').checked=Settings.data.easyMode;
     document.getElementById('settings-modal').classList.remove('hidden');
     document.getElementById('btn-set-close').focus();
   }
@@ -1955,6 +1971,9 @@ class App {
     document.getElementById('set-haptic-int').addEventListener('input',e=>{Settings.data.hapticIntensity=parseFloat(e.target.value);Settings.save();});
     document.getElementById('set-haptic-int').addEventListener('change',()=>Haptic.buzz([0,60]));
     document.getElementById('set-3d').addEventListener('change',e=>{Settings.data.threeD=e.target.checked;Settings.save();this._apply3D();});
+    document.getElementById('set-easy').addEventListener('change',e=>{Settings.data.easyMode=e.target.checked;Settings.save();});
+    document.getElementById('set-tutorial').addEventListener('click',()=>{ Profile.data.tutorialDone=false; Profile.save();
+      this._announce(lang==='ko'?'튜토리얼을 다시 켰어요. 도형 숲에서 시작돼요.':'Tutorial reset. It will start in Shape Forest.'); });
     const dpb=document.getElementById('set-dp-ble'); if(dpb) dpb.addEventListener('click',()=>this.connectDotPad('ble'));
     const dpu=document.getElementById('set-dp-usb'); if(dpu) dpu.addEventListener('click',()=>this.connectDotPad('usb'));
     document.getElementById('btn-set-close').addEventListener('click',()=>this._closeSettings());
@@ -2096,18 +2115,38 @@ class App {
     document.getElementById('hub').classList.add('hidden');
     document.getElementById('game').classList.remove('hidden');
     this.input.setActive(true);
-    // apply today's daily modifier only when starting the (not-yet-done) daily world
+    // apply today's daily modifier only when starting the (not-yet-done) daily world; easy mode removes pressure
     const isDaily = idx===this._dailyIdx && Profile.data.dailyDoneDate!==Profile.today() && this._dailyMod && this._dailyMod!=='none';
-    this.engine._timeLimit=this._dailyTimeLimit||60; this.engine.setModifier(isDaily?this._dailyMod:null);
+    const applyMod = isDaily && !Settings.data.easyMode;
+    this.engine._timeLimit=this._dailyTimeLimit||60; this.engine.setModifier(applyMod?this._dailyMod:null);
     this.engine.load(idx); this.engine.start();
     this.tactile.update(this.engine.grid,this.engine.player.r,this.engine.player.c,this.engine.player.facing);
     document.getElementById('canvas-wrap').focus(); this.renderer.fit();
     const w=WORLDS[idx];
-    const modMsg = isDaily ? (lang==='ko'?` 오늘의 도전: ${this._modLabel(this._dailyMod)}!`:` Daily: ${this._modLabel(this._dailyMod)}!`) : '';
+    const modMsg = applyMod ? (lang==='ko'?` 오늘의 도전: ${this._modLabel(this._dailyMod)}!`:` Daily: ${this._modLabel(this._dailyMod)}!`) : '';
     this._announce(`${lang==='ko'?w.title.ko:w.title.en}. ${lang==='ko'?w.objective.description.ko:w.objective.description.en}${modMsg}`);
-    setTimeout(()=>this.engine._dialogue((lang==='ko'?STORY[w.id].intro.ko:STORY[w.id].intro.en)+modMsg),450);
+    const runTut = idx===0 && !Profile.data.tutorialDone;
+    setTimeout(()=>{ this.engine._dialogue((lang==='ko'?STORY[w.id].intro.ko:STORY[w.id].intro.en)+modMsg);
+      if(runTut) this._startTutorial();
+      else if(Settings.data.easyMode) setTimeout(()=>{ if(this.input._active) this.engine.hint(); }, 3400);
+    },450);
   }
+  _startTutorial(){
+    this._tutSteps=[ {trigger:'move',prompt:t('tut_move'),ok:t('tut_ok')},
+                     {trigger:'scan',prompt:t('tut_scan'),ok:t('tut_ok')},
+                     {trigger:'collect',prompt:t('tut_collect'),ok:t('tut_ok')} ];
+    this._tutStep=0; this._tutActive=true; setTimeout(()=>this._tutSpeak(),1900);
+  }
+  _tutSpeak(){ if(!this._tutActive)return; const s=this._tutSteps[this._tutStep]; if(!s)return;
+    this.engine._dialogue(s.prompt); clearTimeout(this._tutTimer); this._tutTimer=setTimeout(()=>this._tutAdvance(),14000); }
+  _tut(type){ if(!this._tutActive)return; const s=this._tutSteps[this._tutStep]; if(s&&s.trigger===type){ this.tts.speak(s.ok); this._tutAdvance(); } }
+  _tutAdvance(){ clearTimeout(this._tutTimer); this._tutStep++;
+    if(this._tutStep>=this._tutSteps.length){ this._tutActive=false; Profile.data.tutorialDone=true; Profile.save();
+      setTimeout(()=>this.engine._dialogue(t('tut_end')),1300); }
+    else setTimeout(()=>this._tutSpeak(),1400); }
+  _stopTutorial(){ this._tutActive=false; clearTimeout(this._tutTimer); }
   _toHub(){
+    this._stopTutorial&&this._stopTutorial();
     this.input.setActive(false); this.engine.stop(); speechSynthesis.cancel();
     document.getElementById('game').classList.add('hidden');
     document.getElementById('success-modal').classList.add('hidden');
