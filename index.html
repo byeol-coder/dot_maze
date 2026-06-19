@@ -303,6 +303,7 @@ button{font:inherit;cursor:pointer;}
   background:rgba(12,8,32,.62);backdrop-filter:blur(10px);border:1px solid var(--card-border);border-radius:12px;padding:7px 16px;
   font-size:13px;color:var(--muted);font-weight:700;}
 .ctl{display:flex;align-items:center;gap:6px;}
+.ctl-dim{opacity:.6;font-size:11px;border-left:1px solid var(--card-border);padding-left:12px;}
 .ctl kbd{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 5px;border-radius:6px;
   background:rgba(255,255,255,.12);border:1px solid var(--card-border);font-size:11px;font-weight:800;color:#fff;}
 
@@ -741,16 +742,17 @@ button:disabled,.btn-sm:disabled,.btn-primary:disabled{filter:grayscale(.5) brig
 
     <!-- BOTTOM-CENTER: control hints -->
     <div class="hud hud-controls" aria-hidden="true">
-      <span class="ctl"><kbd>←</kbd><kbd>→</kbd><kbd>F1</kbd><kbd>F2</kbd> <span data-i="ctl_move">이동</span></span>
-      <span class="ctl"><kbd>F3</kbd> <span data-i="ctl_act">상호작용</span></span>
-      <span class="ctl"><kbd>F4</kbd> <span data-i="ctl_scan">스캔</span></span>
+      <span class="ctl"><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> <span data-i="ctl_move">이동</span></span>
+      <span class="ctl"><kbd>Space</kbd> <span data-i="ctl_act">상호작용</span></span>
+      <span class="ctl"><kbd>Q</kbd> <span data-i="ctl_scan">스캔</span></span>
+      <span class="ctl ctl-dim">Dot Pad: ←→ · F1~F4</span>
     </div>
     <div class="hud hud-timer hidden" id="timer" aria-live="polite"></div>
 
     <!-- screen-reader-only mirrors (kept for engine + a11y) -->
     <div id="inventory" class="sr-only"></div>
-    <div id="tts-text" class="sr-only" aria-live="polite">—</div>
-    <div id="hud-nearby" class="sr-only" aria-live="polite"></div>
+    <div id="tts-text" class="sr-only">—</div>
+    <div id="hud-nearby" class="sr-only"></div>
     <span id="char-stars" class="sr-only">0</span>
     <span id="char-lvl-badge" class="sr-only">1</span>
     <span id="char-avatar" class="sr-only"></span>
@@ -758,7 +760,7 @@ button:disabled,.btn-sm:disabled,.btn-primary:disabled{filter:grayscale(.5) brig
 </section>
 
 <!-- intro modal -->
-<div class="overlay hidden" id="intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+<div class="overlay hidden" id="intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-title-text">
   <div class="modal">
     <div class="modal-kicker" id="intro-kicker">World 1</div>
     <h1 class="modal-title" id="intro-title-text">Shape Forest</h1>
@@ -776,7 +778,7 @@ button:disabled,.btn-sm:disabled,.btn-primary:disabled{filter:grayscale(.5) brig
 </div>
 
 <!-- success modal -->
-<div class="overlay hidden" id="success-modal" role="dialog" aria-modal="true" aria-labelledby="success-title">
+<div class="overlay hidden" id="success-modal" role="dialog" aria-modal="true" aria-labelledby="success-title-text">
   <div class="modal">
     <div id="success-stars" aria-hidden="true"></div>
     <div class="modal-kicker" data-i="clear">World Clear!</div>
@@ -1244,19 +1246,22 @@ class AudioEngine {
 // ═══════════════════════════════════════════════════════════════════
 class TTSEngine {
   constructor(){ this._on=Settings.data.tts; this._q=[]; this._busy=false; this._last=''; }
-  speak(text,priority=false){ if(!this._on||!text)return;
+  speak(text,priority=false){ if(!text)return;
+    const el=document.getElementById('tts-text'); if(el) el.textContent=text; this._last=text;
+    // game self-voice OFF → push to the single assertive live region for screen readers
+    if(!this._on){ const live=document.getElementById('a11y-live'); if(live) live.textContent=text; return; }
     if(priority){ speechSynthesis.cancel(); this._q=[]; this._busy=false; }
     this._q.push(text); this._flush();
   }
   _flush(){ if(this._busy||!this._q.length)return;
-    const text=this._q.shift(); this._last=text; this._busy=true;
+    const text=this._q.shift(); this._busy=true;
     if(window.app&&window.app.audio) window.app.audio.duck(true); // dim music while speaking
     const u=new SpeechSynthesisUtterance(text);
     u.lang=lang==='ko'?'ko-KR':'en-US'; u.rate=Settings.data.rate; u.pitch=1.05; u.volume=Math.min(1,Settings.data.volume+0.2);
     u.onend=u.onerror=()=>{ this._busy=false; if(!this._q.length && window.app&&window.app.audio) window.app.audio.duck(false); this._flush(); };
     speechSynthesis.speak(u);
     const el=document.getElementById('tts-text'); if(el) el.textContent=text;
-    const live=document.getElementById('a11y-live'); if(live) live.textContent=text;
+    // NOTE: when self-voice is ON we do NOT also push to aria-live (avoids screen-reader double-speak)
   }
   repeat(){ if(this._last) this.speak(this._last,true); }
   toggle(){ this._on=!this._on; if(!this._on) speechSynthesis.cancel(); return this._on; }
