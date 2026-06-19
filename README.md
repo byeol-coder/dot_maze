@@ -88,7 +88,8 @@ A tactile sandbox math game for visually impaired children — *explore shapes w
 
 - **연결** — 게임/허브의 Dot Pad 패널 또는 설정의 `Dot Pad 기기 → BLE / USB` 버튼. Web Bluetooth(BLE) 또는 Web Serial(USB)로 페어링 (Chromium 계열 + HTTPS/localhost 필요)
 - **그래픽 출력** — 60×40 촉각 매트릭스를 기기 셀(예: DotPad 320 = 30×10셀)로 변환해 `displayGraphicData()`로 실시간 출력 (SDK GraphicMode 비트순서에 맞춰 변환)
-- **물리 키 입력** — SDK `keyCallBack`을 게임 입력에 연결: 좌/우 패닝키 → 좌우 이동, **F1=위·F2=아래·F3=상호작용·F4=스캔** (화면 키 매핑과 동일)
+- **물리 키 입력** — SDK `keyCallBack(device, keyCode)`을 단일 입력 경로(`InputController.deviceKey`)로 연결. **플레이 중에는** 좌/우 패닝키 → 좌우 이동, **F1=위·F2=아래·F3=상호작용·F4=스캔** (화면 키 매핑과 동일). **메뉴·허브에서는** 같은 키가 UI를 조작 — 패닝키/F1·F2로 버튼 포커스 이동, F3로 선택(클릭), F4로 도움말 → **키보드 없이 Dot Pad만으로 연결→시작→플레이**까지 가능
+- **연결 즉시 키맵 음성 안내** — 기기가 실제로 연결되면(`DataCodes.Connected`) "닷패드가 연결됐어요. 좌우 패닝키로 좌우 이동, F1은 위…"처럼 **조작법을 음성으로 한 번 읽어 줌**(연결 해제 시 리셋). 그래픽 출력 동기 확인용으로 전체 핀을 잠깐 올리는 testPulse 포함
 - 미연결/미지원 환경에서는 화면상 Dot Pad·키보드로 그대로 플레이
 
 ```javascript

@@ -1089,6 +1089,8 @@ const T = {
     greetBack:'다시 왔네요, 반가워요!', greetStreak:(n)=>`${n}일 연속 중이에요. 오늘 도전하면 이어져요!`,
     greetStart:'모험 시작 버튼이 선택돼 있어요. 스페이스나 엔터로 바로 시작하세요.',
     greetTitle:(name)=>`${name}님,`, greetReward:(n,name)=>`'${name}' 칭호까지 ${n}일 남았어요.`,
+    dpConnected:'닷패드가 연결됐어요. 좌우 패닝키로 좌우 이동, F1은 위, F2는 아래, F3는 줍기와 선택, F4는 주변 스캔이에요.',
+    dpMenuHelp:'메뉴에서는 좌우 패닝키나 F1·F2로 버튼을 옮기고, F3로 선택해요. F4로 도움말을 들어요.',
     set_reminder:'매일 알림', set_reminder_time:'알림 시간',
     reminderTitle:'오늘의 도전이 기다려요!', reminderBody:'ShapeCraft에서 오늘의 도형 모험을 시작해 보세요.',
     reminderStreakBody:(n)=>`${n}일 연속 중이에요! 오늘도 도전하면 이어져요.`,
@@ -1140,6 +1142,8 @@ const T = {
     greetBack:'Welcome back!', greetStreak:(n)=>`You're on a ${n}-day streak. Play today to keep it going!`,
     greetStart:'The Start button is selected. Press Space or Enter to begin right away.',
     greetTitle:(name)=>`${name},`, greetReward:(n,name)=>`${n} day${n>1?'s':''} to the "${name}" title.`,
+    dpConnected:'Dot Pad connected. Use the left and right panning keys to move sideways, F1 for up, F2 for down, F3 to pick up and select, F4 to scan around you.',
+    dpMenuHelp:'In menus, move between buttons with the panning keys or F1 and F2, and press F3 to select. Press F4 for help.',
     set_reminder:'Daily reminder', set_reminder_time:'Reminder time',
     reminderTitle:'Your daily challenge awaits!', reminderBody:'Start today’s shape adventure in ShapeCraft.',
     reminderStreakBody:(n)=>`You're on a ${n}-day streak! Play today to keep it going.`,
@@ -1663,6 +1667,28 @@ class InputController {
   hint(){ if(this._active) this.h.onHint(); }
   repeat(){ this.h.onRepeat(); }
   sonar(){ if(this._active && this.h.onSonar) this.h.onSonar(); }
+  // Single entry point for Dot Pad physical keys. While playing → drive the
+  // character; in menus/hub → move focus + activate, so a Dot Pad–only user can
+  // get from connect → Start → play without a keyboard. kind: left|right|up|down|act|scan
+  deviceKey(kind){
+    if(this._active){
+      if(kind==='act') this.action();
+      else if(kind==='scan') this.sonar();
+      else this.pan(kind);
+      return;
+    }
+    if(kind==='act'){ const el=document.activeElement; if(el&&typeof el.click==='function') el.click(); return; }
+    if(kind==='scan'){ if(this.h.onDeviceHelp) this.h.onDeviceHelp(); return; }
+    this._moveFocus(kind==='right'||kind==='down');
+  }
+  _focusScope(){ const ov=Array.from(document.querySelectorAll('.overlay:not(.hidden)')).pop(); return ov||document; }
+  _focusables(){ const root=this._focusScope();
+    return Array.from(root.querySelectorAll('button, [href], input:not([type="hidden"]), select, [tabindex]:not([tabindex="-1"])'))
+      .filter(el=>!el.disabled && el.offsetParent!==null); }
+  _moveFocus(fwd){ const f=this._focusables(); if(!f.length) return;
+    let i=f.indexOf(document.activeElement);
+    i = i<0 ? (fwd?0:f.length-1) : (i+(fwd?1:-1)+f.length)%f.length;
+    try{ f[i].focus(); f[i].scrollIntoView({block:'nearest'}); }catch(e){} }
   _bind(){
     // Dot Pad layout: ←/→ panning keys + F1~F4 function keys (F1 up, F2 down, F3 interact, F4 scan).
     // Arrow up/down + WASD also kept for desktop convenience.
@@ -1930,12 +1956,12 @@ const DotPad = {
     else if(code===m.DataCodes.Disconnected){ console.info('[DotPad] disconnected'); if(this.device===device) this.device=null; if(window.app) window.app._dotpadStatus(false); } },
   _onKey(device,key){ const m=this.mod; if(!m||!window.app) return; const K=m.KeyCodes, inp=window.app.input;
     switch(key){
-      case K.PanningLeft: inp.pan('left'); break;
-      case K.PanningRight: inp.pan('right'); break;
-      case K.KeyFunction1: inp.pan('up'); break;
-      case K.KeyFunction2: inp.pan('down'); break;
-      case K.KeyFunction3: case K.LPF1: inp.action(); break;
-      case K.KeyFunction4: case K.RPF4: inp.sonar(); break;
+      case K.PanningLeft: inp.deviceKey('left'); break;
+      case K.PanningRight: inp.deviceKey('right'); break;
+      case K.KeyFunction1: inp.deviceKey('up'); break;
+      case K.KeyFunction2: inp.deviceKey('down'); break;
+      case K.KeyFunction3: case K.LPF1: inp.deviceKey('act'); break;
+      case K.KeyFunction4: case K.RPF4: inp.deviceKey('scan'); break;
     } },
   // throttled output: keep only the latest frame, send at most ~5/sec to avoid BLE thrash
   display(matrix){ if(!this.isConnected()||!this.sdk) return; this._pending=matrix; this._flush(); },
@@ -2205,6 +2231,7 @@ class App {
     this.input=new InputController({
       onMove:(dr,dc)=>this.engine.move(dr,dc), onAction:()=>this.engine.action(),
       onHint:()=>this.engine.hint(), onRepeat:()=>this.tts.repeat(), onSonar:()=>this.engine.sonar(), onHelp:()=>this.engine.help(),
+      onDeviceHelp:()=>{ this._announce(t('dpMenuHelp')); this.tts.speak(t('dpMenuHelp'),true); },
     });
     this.input.attachDotPad(null); // DOM-event bridge ready; pass real adapter when available
     this._worldIdx=0; this._highestUnlocked=0;
@@ -2257,6 +2284,9 @@ class App {
     const st=document.getElementById('set-dp-status'); if(st) st.textContent = connected?(lang==='ko'?'연결됨':'Connected'):(lang==='ko'?'연결 안 됨':'Not connected');
     // route the 60×40 tactile matrix to the device while connected
     this.tactile.setAdapter(connected ? { send:(m)=>DotPad.display(m) } : null);
+    // speak the key map once when a device actually connects (covers manual + auto-reconnect)
+    if(connected){ if(!this._dpAnnounced){ this._dpAnnounced=true; this._announce(t('dpConnected')); this.tts.speak(t('dpConnected'),true); } }
+    else this._dpAnnounced=false;
   }
   _pushTactile(){ const e=this.engine; if(e&&e.grid&&e.grid.length) this.tactile.update(e.grid,e.player.r,e.player.c,e.player.facing); else DotPad.clear(); }
   async connectDotPad(type){
@@ -2264,7 +2294,8 @@ class App {
     if(DotPad.isConnected()){ DotPad.disconnect(); this._announce(lang==='ko'?'Dot Pad 연결을 해제했어요.':'Dot Pad disconnected.'); return; }
     this.audio.resume();
     const ok=await DotPad.connect(type||'ble');
-    this._announce(ok ? (lang==='ko'?'Dot Pad가 연결됐어요.':'Dot Pad connected.') : (lang==='ko'?'Dot Pad 연결에 실패했어요.':'Dot Pad connection failed.'));
+    // success is announced with the full key map by _dotpadStatus (on the Connected event); only flag failure here
+    if(!ok) this._announce(lang==='ko'?'Dot Pad 연결에 실패했어요.':'Dot Pad connection failed.');
   }
   _injectIcons(){ document.querySelectorAll('[data-icon]').forEach(el=>{ if(el.dataset.iconDone)return;
     const s=el.dataset.iconSize?+el.dataset.iconSize:18; el.innerHTML=svgIcon(el.dataset.icon,{size:s}); el.dataset.iconDone='1'; }); }
