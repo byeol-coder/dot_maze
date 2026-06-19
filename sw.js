@@ -1,6 +1,6 @@
 /* ShapeCraft service worker — install + offline (network-first, cache fallback).
    Lets blind users tap a home-screen icon and play even without internet. */
-const CACHE = 'shapecraft-v1';
+const CACHE = 'shapecraft-v2';
 const SHELL = ['./', './index.html', './DotPadSDK-3.0.0.js', './maze_character.png', './manifest.json'];
 
 self.addEventListener('install', (e) => {
@@ -10,6 +10,16 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
+  );
+});
+// tapping the daily reminder focuses an open game tab or opens a new one
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) { if ('focus' in c) return c.focus(); }
+      if (self.clients.openWindow) return self.clients.openWindow('./');
+    })
   );
 });
 self.addEventListener('fetch', (e) => {

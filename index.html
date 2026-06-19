@@ -372,6 +372,8 @@ button{font:inherit;cursor:pointer;}
 .set-switch:checked{background:linear-gradient(90deg,var(--cyan),var(--neon));}
 .set-switch:checked::after{transform:translateX(22px);}
 .set-range{flex:0 0 150px;accent-color:var(--neon);height:28px;cursor:pointer;}
+.set-time{height:30px;padding:0 10px;border-radius:9px;border:1px solid var(--card-border);background:var(--glass);color:var(--text);font-size:14px;font-weight:800;color-scheme:dark;cursor:pointer;}
+.set-time:focus-visible{outline:2px solid var(--neon);outline-offset:2px;}
 .set-dp{display:flex;align-items:center;gap:8px;}
 .set-dp-btn{height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--card-border);background:var(--glass);color:var(--text);font-size:13px;font-weight:800;}
 .set-dp-btn:hover{background:rgba(168,85,247,.2);border-color:var(--neon);}
@@ -821,6 +823,10 @@ button:disabled,.btn-sm:disabled,.btn-primary:disabled{filter:grayscale(.5) brig
         <button class="set-dp-btn" id="set-tutorial"><span data-i="set_tutorial_btn">다시 보기</span></button></div>
       <label class="set-row"><span data-i="set_tts">음성 안내</span>
         <input type="checkbox" id="set-tts" class="set-switch"></label>
+      <label class="set-row"><span data-i="set_reminder">매일 알림</span>
+        <input type="checkbox" id="set-reminder" class="set-switch"></label>
+      <label class="set-row" id="set-reminder-time-row"><span data-i="set_reminder_time">알림 시간</span>
+        <input type="time" id="set-reminder-time" class="set-time" value="18:00"></label>
       <label class="set-row"><span data-i="set_haptic">진동</span>
         <input type="checkbox" id="set-haptic" class="set-switch"></label>
       <label class="set-row"><span data-i="set_haptic_int">진동 세기</span>
@@ -1075,6 +1081,12 @@ const T = {
     welcome:'ShapeCraft에 오신 걸 환영해요. 음성 안내가 켜져 있어요. 끄거나 바꾸려면 설정을 여세요.',
     greetBack:'다시 왔네요, 반가워요!', greetStreak:(n)=>`${n}일 연속 중이에요. 오늘 도전하면 이어져요!`,
     greetStart:'모험 시작 버튼이 선택돼 있어요. 스페이스나 엔터로 바로 시작하세요.',
+    set_reminder:'매일 알림', set_reminder_time:'알림 시간',
+    reminderTitle:'오늘의 도전이 기다려요!', reminderBody:'ShapeCraft에서 오늘의 도형 모험을 시작해 보세요.',
+    reminderStreakBody:(n)=>`${n}일 연속 중이에요! 오늘도 도전하면 이어져요.`,
+    reminderOn:'매일 알림을 켰어요. 정한 시간에 오늘의 도전을 알려 드려요.', reminderOff:'매일 알림을 껐어요.',
+    reminderBlocked:'알림 권한이 막혀 있어요. 브라우저 설정에서 이 사이트의 알림을 허용해 주세요.',
+    reminderUnsupported:'이 브라우저는 알림을 지원하지 않아요.',
     srHowto:'ShapeCraft, 닷 기반 촉각 접근성 게임입니다. 게임이 직접 음성으로 안내해요. 화살표 키나 W A S D로 캐릭터를 움직이고, 스페이스 키로 도형을 줍거나 주변을 읽고, Q 키로 주변을 스캔하고, 물음표 키로 도움말을 들어요. Dot Pad 기기에서는 좌우 패닝키로 좌우 이동, F1과 F2 기능키로 위아래 이동, F3로 줍기, F4로 스캔합니다. 설정에서 음성 안내와 난이도, 진동을 바꿀 수 있어요.',
     next:'다음 월드', replay:'다시 하기', tohub:'메인으로', selectworld:'월드 선택', close:'닫기',
     locked:'잠김', wall:'벽이에요!', goalOpen:'출구예요! 들어가세요!',
@@ -1119,6 +1131,12 @@ const T = {
     welcome:'Welcome to ShapeCraft. Voice guidance is on. You can turn it off or change it in Settings.',
     greetBack:'Welcome back!', greetStreak:(n)=>`You're on a ${n}-day streak. Play today to keep it going!`,
     greetStart:'The Start button is selected. Press Space or Enter to begin right away.',
+    set_reminder:'Daily reminder', set_reminder_time:'Reminder time',
+    reminderTitle:'Your daily challenge awaits!', reminderBody:'Start today’s shape adventure in ShapeCraft.',
+    reminderStreakBody:(n)=>`You're on a ${n}-day streak! Play today to keep it going.`,
+    reminderOn:'Daily reminder is on. We’ll alert you at your chosen time.', reminderOff:'Daily reminder is off.',
+    reminderBlocked:'Notifications are blocked. Please allow notifications for this site in your browser settings.',
+    reminderUnsupported:'This browser does not support notifications.',
     srHowto:'ShapeCraft, a Dot-based tactile accessibility game. The game speaks guidance aloud. Move with the arrow keys or W A S D, press Space to pick up shapes or read your surroundings, press Q to scan, and the question-mark key for help. On a Dot Pad device, use the left and right panning keys to move sideways, F1 and F2 to move up and down, F3 to pick up, F4 to scan. You can change voice, difficulty and vibration in Settings.',
     next:'Next World', replay:'Retry', tohub:'Home', selectworld:'Select World', close:'Close',
     locked:'Locked', wall:'Wall!', goalOpen:'Exit! Go through!',
@@ -1738,6 +1756,7 @@ function hashDate(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt
 // ═══════════════════════════════════════════════════════════════════
 const Settings = {
   data:{ tts:true, rate:0.94, volume:0.8, musicVolume:0.45, haptics:true, hapticIntensity:0.8, threeD:true, easyMode:true, highContrast:false,
+    reminderEnabled:false, reminderTime:'18:00', reminderLastFired:'',
     reduceMotion:(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)||false },
   load(){ try{ const s=localStorage.getItem('shapecraft_settings'); if(s) this.data={...this.data,...JSON.parse(s)}; }catch(e){} },
   save(){ try{ localStorage.setItem('shapecraft_settings',JSON.stringify(this.data)); }catch(e){} },
@@ -1746,6 +1765,59 @@ const Haptic = { buzz(pattern){ if(!(Settings.data.haptics&&navigator.vibrate))r
   const k=Settings.data.hapticIntensity==null?1:Settings.data.hapticIntensity;
   const p=Array.isArray(pattern)?pattern.map((v,i)=>i%2===0?Math.round(v*k):v):Math.round(pattern*k);
   try{ navigator.vibrate(p); }catch(e){} } };
+
+// ═══════════════════════════════════════════════════════════════════
+// LOCAL DAILY REMINDER (no push server — best-effort while app is open
+// or reopened). Notifications API + service-worker showNotification.
+// Fires at the chosen time if today's daily challenge isn't done yet,
+// and catches up on next open if that time already passed today.
+// ═══════════════════════════════════════════════════════════════════
+const Reminder = {
+  _timer:null,
+  supported(){ return 'Notification' in window; },
+  permission(){ return this.supported() ? Notification.permission : 'unsupported'; },
+  parseTime(){ const p=(Settings.data.reminderTime||'18:00').split(':'); return {h:Math.max(0,Math.min(23,+p[0]||18)), m:Math.max(0,Math.min(59,+p[1]||0))}; },
+  doneToday(){ return Profile.data.dailyDoneDate===Profile.today(); },
+  async enable(){ // returns 'granted' | 'denied' | 'default' | 'unsupported'
+    if(!this.supported()) return 'unsupported';
+    let perm=Notification.permission;
+    if(perm==='default'){ try{ perm=await Notification.requestPermission(); }catch(e){ perm=Notification.permission; } }
+    if(perm!=='granted'){ Settings.data.reminderEnabled=false; Settings.save(); return perm; }
+    Settings.data.reminderEnabled=true; Settings.save(); this.schedule(); return 'granted';
+  },
+  disable(){ Settings.data.reminderEnabled=false; Settings.save(); this._clear(); },
+  _clear(){ if(this._timer){ clearTimeout(this._timer); this._timer=null; } },
+  _active(){ return Settings.data.reminderEnabled && this.supported() && Notification.permission==='granted'; },
+  schedule(){ this._clear(); if(!this._active()) return;
+    const now=new Date(), {h,m}=this.parseTime();
+    const next=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m,0,0);
+    if(next.getTime()<=now.getTime()) next.setDate(next.getDate()+1); // already past today → tomorrow
+    this._timer=setTimeout(()=>{ this.fire(); this.schedule(); }, Math.max(1000, next.getTime()-now.getTime()));
+  },
+  fire(){ if(!this._active() || this.doneToday()) return;
+    Settings.data.reminderLastFired=Profile.today(); Settings.save(); this._notify();
+  },
+  checkMissed(){ if(!this._active() || this.doneToday()) return;
+    if(Settings.data.reminderLastFired===Profile.today()) return; // already reminded today
+    const now=new Date(), {h,m}=this.parseTime();
+    const today=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m,0,0);
+    if(now.getTime()>=today.getTime()){ Settings.data.reminderLastFired=Profile.today(); Settings.save(); this._notify(); }
+  },
+  _notify(){ const title=t('reminderTitle');
+    const body=(Profile.data.streak||0)>0 ? t('reminderStreakBody', Profile.data.streak) : t('reminderBody');
+    const opts={ body, icon:'maze_character.png', badge:'maze_character.png', tag:'shapecraft-daily', lang:lang==='ko'?'ko':'en', renotify:true };
+    try{
+      if(navigator.serviceWorker && navigator.serviceWorker.ready){
+        navigator.serviceWorker.ready.then(reg=>reg.showNotification(title,opts)).catch(()=>{ try{ new Notification(title,opts); }catch(e){} });
+      } else { new Notification(title,opts); }
+    }catch(e){}
+  },
+  init(){
+    if(Settings.data.reminderEnabled && (!this.supported() || Notification.permission!=='granted')){ Settings.data.reminderEnabled=false; Settings.save(); }
+    if(this._active()){ this.schedule(); this.checkMissed(); }
+    document.addEventListener('visibilitychange',()=>{ if(!document.hidden && this._active()){ this.schedule(); this.checkMissed(); } });
+  },
+};
 
 // ═══════════════════════════════════════════════════════════════════
 // REAL DOT PAD DEVICE (DotPadSDK 3.0.0) — BLE/USB connect, key input, graphic output
@@ -2074,7 +2146,7 @@ class App {
     // low-spec / mobile: default to 2D unless the user has saved an explicit preference
     if(!localStorage.getItem('shapecraft_settings') && this._lowSpec()) Settings.data.threeD=false;
     if(Settings.data.threeD) this._apply3D();
-    this._welcomeOnce(); this._focusStart();
+    this._welcomeOnce(); this._focusStart(); Reminder.init();
   }
   _fillHowto(){ const el=document.getElementById('sr-howto'); if(el) el.textContent=t('srHowto'); }
   _greetText(){ const d=Profile.data; const parts=[];
@@ -2145,10 +2217,16 @@ class App {
     document.getElementById('set-haptic-int').value=Settings.data.hapticIntensity;
     document.getElementById('set-3d').checked=Settings.data.threeD;
     document.getElementById('set-easy').checked=Settings.data.easyMode;
+    document.getElementById('set-reminder').checked=Settings.data.reminderEnabled;
+    document.getElementById('set-reminder-time').value=Settings.data.reminderTime||'18:00';
+    this._reflectReminder();
     document.getElementById('settings-modal').classList.remove('hidden');
     document.getElementById('btn-set-close').focus();
   }
   _closeSettings(){ document.getElementById('settings-modal').classList.add('hidden'); }
+  _reflectReminder(){ const on=Settings.data.reminderEnabled; const row=document.getElementById('set-reminder-time-row');
+    if(row){ row.style.display=on?'':'none'; row.setAttribute('aria-hidden', on?'false':'true'); }
+    const cb=document.getElementById('set-reminder'); if(cb) cb.checked=on; }
   _bindSettings(){
     const save=()=>{ Settings.save(); this._applySettings(); };
     document.getElementById('set-tts').addEventListener('change',e=>{Settings.data.tts=e.target.checked;save();});
@@ -2164,6 +2242,15 @@ class App {
     document.getElementById('set-haptic-int').addEventListener('change',()=>Haptic.buzz([0,60]));
     document.getElementById('set-3d').addEventListener('change',e=>{Settings.data.threeD=e.target.checked;Settings.save();this._apply3D();});
     document.getElementById('set-easy').addEventListener('change',e=>{Settings.data.easyMode=e.target.checked;Settings.save();});
+    document.getElementById('set-reminder').addEventListener('change',async e=>{
+      if(e.target.checked){ const r=await Reminder.enable();
+        if(r==='granted'){ this._announce(t('reminderOn')); this.tts.speak(t('reminderOn'),true); }
+        else { e.target.checked=false; const msg=r==='unsupported'?t('reminderUnsupported'):t('reminderBlocked'); this._announce(msg); this.tts.speak(msg,true); } }
+      else { Reminder.disable(); this._announce(t('reminderOff')); this.tts.speak(t('reminderOff'),true); }
+      this._reflectReminder(); });
+    document.getElementById('set-reminder-time').addEventListener('change',e=>{
+      Settings.data.reminderTime=e.target.value||'18:00'; Settings.save(); Reminder.schedule();
+      if(Settings.data.reminderEnabled) this._announce(t('reminderOn')); });
     document.getElementById('set-tutorial').addEventListener('click',()=>{ Profile.data.tutorialDone=false; Profile.save();
       this._announce(lang==='ko'?'튜토리얼을 다시 켰어요. 도형 숲에서 시작돼요.':'Tutorial reset. It will start in Shape Forest.'); });
     const dpb=document.getElementById('set-dp-ble'); if(dpb) dpb.addEventListener('click',()=>this.connectDotPad('ble'));
