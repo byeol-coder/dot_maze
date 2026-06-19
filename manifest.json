@@ -1,0 +1,16 @@
+{
+  "name": "ShapeCraft by Dot — 촉각 샌드박스 수학 게임",
+  "short_name": "ShapeCraft",
+  "description": "시각장애 아동을 위한 소리·촉각·음성 기반 수학 탐험 게임",
+  "lang": "ko",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0620",
+  "theme_color": "#0a0620",
+  "icons": [
+    { "src": "maze_character.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "maze_character.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
