@@ -365,6 +365,32 @@ button{font:inherit;cursor:pointer;}
 .set-dp-btn{height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--card-border);background:var(--glass);color:var(--text);font-size:13px;font-weight:800;}
 .set-dp-btn:hover{background:rgba(168,85,247,.2);border-color:var(--neon);}
 .set-dp-stat{font-size:12px;color:var(--muted);min-width:64px;text-align:right;}
+/* daily mission card as button */
+.mission-card{appearance:none;text-align:left;width:100%;cursor:pointer;font-family:inherit;}
+.mission-card:hover{border-color:var(--neon);}
+.mission-streak{margin-top:8px;font-size:13px;font-weight:800;color:var(--gold);}
+/* badges stat as button */
+.player-stat-btn{appearance:none;border:0;background:none;cursor:pointer;font-family:inherit;border-radius:12px;}
+.player-stat-btn:hover{background:rgba(255,255,255,.07);}
+/* endless world card */
+.endless-card .world-thumb,.endless-card{background:linear-gradient(135deg,#13294a,#0a0620);}
+.endless-card .world-num{font-size:22px;}
+/* achievements modal */
+.ach-grid{display:grid;gap:10px;max-height:52vh;overflow-y:auto;}
+.ach-item{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:14px;
+  border:1px solid var(--card-border);background:var(--glass);opacity:.55;}
+.ach-item.got{opacity:1;border-color:rgba(255,200,74,.4);background:rgba(255,200,74,.08);}
+.ach-ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:rgba(255,255,255,.06);}
+.ach-name{font-size:15px;font-weight:900;color:#fff;}
+.ach-desc{font-size:12px;color:var(--muted);margin-top:1px;}
+/* toast */
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);z-index:60;
+  max-width:90vw;padding:12px 20px;border-radius:14px;border:1px solid rgba(255,200,74,.5);
+  background:linear-gradient(135deg,rgba(255,200,74,.22),rgba(168,85,247,.2));backdrop-filter:blur(14px);
+  color:#fff;font-size:15px;font-weight:800;box-shadow:0 14px 44px rgba(0,0,0,.5);
+  opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+body.rm #toast{transition:none;}
 
 /* Dot Pad scan button */
 .btn-scan{margin-top:12px;width:100%;height:46px;border-radius:14px;border:1px solid rgba(58,209,255,.4);
@@ -426,22 +452,23 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
         <div class="xp-text" id="xp-text">0 / 100 XP</div>
       </div>
       <div class="player-stat"><span class="ic" data-icon="star" data-icon-size="22"></span><span class="val" id="stat-stars">0</span><span class="lbl" data-i="stars">Stars</span></div>
-      <div class="player-stat"><span class="ic" data-icon="shield" data-icon-size="22"></span><span class="val" id="stat-badges">0</span><span class="lbl" data-i="badges">Badges</span></div>
+      <button class="player-stat player-stat-btn" id="stat-badges-btn" aria-label="업적 보기"><span class="ic" data-icon="shield" data-icon-size="22"></span><span class="val" id="stat-badges">0</span><span class="lbl" data-i="badges">Badges</span></button>
       <button class="icon-btn" id="btn-settings" aria-label="설정" data-icon="gear"></button>
     </div>
   </header>
 
   <!-- center stage -->
   <div class="hub-stage">
-    <!-- mission -->
-    <div class="mission-card">
+    <!-- mission (daily challenge) -->
+    <button class="mission-card" id="mission-card" aria-label="오늘의 도전 시작">
       <div class="mission-head"><span data-icon="flag"></span><span data-i="mission">Today's Mission</span></div>
-      <div class="mission-text" id="mission-text">삼각형 열쇠를 찾아 문을 여세요.</div>
+      <div class="mission-text" id="mission-text">—</div>
+      <div class="mission-streak" id="mission-streak"></div>
       <div class="mission-reward">
-        <div class="r"><span class="l" data-i="reward">Reward</span><span class="v"><span data-icon="star" data-icon-size="15"></span> 25 <span data-i="stars2">Stars</span></span></div>
+        <div class="r"><span class="l" data-i="reward">Reward</span><span class="v"><span data-icon="star" data-icon-size="15"></span> <span id="mission-reward-val">15</span> <span data-i="stars2">Stars</span></span></div>
         <div class="mission-chest" data-icon="gift" data-icon-size="28"></div>
       </div>
-    </div>
+    </button>
 
     <!-- scene -->
     <div class="scene">
@@ -641,6 +668,19 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
     <button class="btn-primary" id="btn-set-close" style="justify-self:start"><span data-i="set_close">닫기</span></button>
   </div>
 </div>
+
+<!-- achievements modal -->
+<div class="overlay hidden" id="ach-modal" role="dialog" aria-modal="true" aria-labelledby="ach-title">
+  <div class="modal">
+    <div class="modal-kicker">🏆 <span id="ach-sub">0 / 0</span></div>
+    <h2 class="modal-title" id="ach-title" data-i="achievements">업적</h2>
+    <div class="ach-grid" id="ach-grid"></div>
+    <button class="btn-sm" id="btn-ach-close" style="justify-self:start"><span data-i="close">닫기</span></button>
+  </div>
+</div>
+
+<!-- achievement / streak toast -->
+<div id="toast" role="status" aria-live="polite"></div>
 
 <div id="a11y-live" aria-live="assertive" aria-atomic="true" role="status"></div>
 
@@ -846,7 +886,7 @@ const T = {
     set_contrast:'고대비 화면', set_motion:'모션 줄이기', set_close:'닫기',
     lg_you:'나', lg_target:'목표', voiceOn:'음성 켜짐', voiceOff:'음성 꺼짐',
     ctl_move:'이동', ctl_scan:'스캔', ctl_act:'상호작용', toHubMsg:'메인 화면으로 돌아왔어요.',
-    set_haptic_int:'진동 세기', set_3d:'3D 입체 화면', set_dotpad:'Dot Pad 기기',
+    set_haptic_int:'진동 세기', set_3d:'3D 입체 화면', set_dotpad:'Dot Pad 기기', achievements:'업적',
     next:'다음 월드', replay:'다시 하기', tohub:'메인으로', selectworld:'월드 선택', close:'닫기',
     locked:'잠김', wall:'벽이에요!', goalOpen:'출구예요! 들어가세요!',
     needMore:(n)=>`아직 ${n}개 더 남았어요!`,
@@ -874,7 +914,7 @@ const T = {
     set_contrast:'High contrast', set_motion:'Reduce motion', set_close:'Close',
     lg_you:'You', lg_target:'Target', voiceOn:'Voice On', voiceOff:'Voice Off',
     ctl_move:'Move', ctl_scan:'Scan', ctl_act:'Interact', toHubMsg:'Back to the main screen.',
-    set_haptic_int:'Vibration strength', set_3d:'3D view', set_dotpad:'Dot Pad device',
+    set_haptic_int:'Vibration strength', set_3d:'3D view', set_dotpad:'Dot Pad device', achievements:'Achievements',
     next:'Next World', replay:'Retry', tohub:'Home', selectworld:'Select World', close:'Close',
     locked:'Locked', wall:'Wall!', goalOpen:'Exit! Go through!',
     needMore:(n)=>`${n} more to go!`,
@@ -1395,18 +1435,65 @@ window.ShapeCraftInput = { pan:(d)=>window.dispatchEvent(new CustomEvent('dotpad
 // PROFILE (localStorage)
 // ═══════════════════════════════════════════════════════════════════
 const Profile = {
-  data:{ stars:0, worldStars:{}, badges:0, xp:0 },
-  load(){ try{ const s=localStorage.getItem('shapecraft_profile'); if(s) this.data=JSON.parse(s); }catch(e){} },
+  data:{ stars:0, worldStars:{}, badges:0, xp:0, bonusStars:0,
+    streak:0, lastDailyDate:'', dailyDoneDate:'', achievements:[], plays:0, sonarCount:0, endlessBest:0 },
+  load(){ try{ const s=localStorage.getItem('shapecraft_profile'); if(s) this.data={...this.data,...JSON.parse(s)}; }catch(e){} },
   save(){ try{ localStorage.setItem('shapecraft_profile',JSON.stringify(this.data)); }catch(e){} },
   level(){ return Math.floor(this.data.xp/100)+1; },
-  award(worldId,stars){
-    const prev=this.data.worldStars[worldId]||0;
+  today(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; },
+  _recalc(){ this.data.stars=Object.values(this.data.worldStars).reduce((a,b)=>a+b,0)+(this.data.bonusStars||0);
+    this.data.badges=Object.values(this.data.worldStars).filter(s=>s>0).length; },
+  award(worldId,stars){ const prev=this.data.worldStars[worldId]||0;
     if(stars>prev){ this.data.worldStars[worldId]=stars; this.data.xp+=(stars-prev)*4; }
-    this.data.stars=Object.values(this.data.worldStars).reduce((a,b)=>a+b,0);
-    this.data.badges=Object.values(this.data.worldStars).filter(s=>s>0).length;
-    this.save();
-  },
+    this._recalc(); this.save(); },
+  addStars(n){ this.data.bonusStars=(this.data.bonusStars||0)+n; this.data.xp+=n*4; this._recalc(); this.save(); },
+  markDailyDone(){ const t=this.today();
+    if(this.data.dailyDoneDate===t) return {firstToday:false, streak:this.data.streak||0};
+    const y=new Date(Date.now()-864e5), yStr=`${y.getFullYear()}-${y.getMonth()+1}-${y.getDate()}`;
+    this.data.streak = (this.data.lastDailyDate===yStr) ? (this.data.streak||0)+1 : 1;
+    this.data.dailyDoneDate=t; this.data.lastDailyDate=t; this.save();
+    return {firstToday:true, streak:this.data.streak}; },
+  hasAch(id){ return (this.data.achievements||[]).includes(id); },
+  addAch(id){ if(!this.hasAch(id)){ this.data.achievements.push(id); this.save(); return true; } return false; },
 };
+
+// ═══════════════════════════════════════════════════════════════════
+// ACHIEVEMENTS (long-term goals, announced with voice + haptic)
+// ═══════════════════════════════════════════════════════════════════
+const ACHIEVEMENTS=[
+  {id:'first_clear', ko:'첫 모험',     en:'First Adventure', dko:'첫 월드 클리어',   den:'Clear your first world', check:p=>p.badges>=1},
+  {id:'all_worlds',  ko:'사대 정복',   en:'World Conqueror', dko:'네 월드 모두 클리어', den:'Clear all four worlds', check:p=>[1,2,3,4].every(i=>(p.worldStars[i]||0)>0)},
+  {id:'streak3',     ko:'사흘 개근',   en:'3-Day Streak',    dko:'3일 연속 도전',    den:'3 days in a row', check:p=>(p.streak||0)>=3},
+  {id:'streak7',     ko:'한 주 개근',  en:'7-Day Streak',    dko:'7일 연속 도전',    den:'7 days in a row', check:p=>(p.streak||0)>=7},
+  {id:'stars50',     ko:'별 사냥꾼',   en:'Star Hunter',     dko:'별 50개 모으기',   den:'Collect 50 stars', check:p=>p.stars>=50},
+  {id:'stars150',    ko:'별의 대가',   en:'Star Master',     dko:'별 150개 모으기',  den:'Collect 150 stars', check:p=>p.stars>=150},
+  {id:'sonar20',     ko:'소나 마스터', en:'Sonar Master',    dko:'스캔 20번 사용',   den:'Use scan 20 times', check:p=>(p.sonarCount||0)>=20},
+  {id:'endless5',    ko:'끝없는 탐험가', en:'Endless Explorer', dko:'끝없는 탐험 5층 도달', den:'Reach endless depth 5', check:p=>(p.endlessBest||0)>=5},
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// PROCEDURAL MAZE (endless mode) — recursive backtracker, always solvable
+// ═══════════════════════════════════════════════════════════════════
+function genEndless(depth){
+  const n=Math.min(4+depth,9), S=2*n+1;
+  const g=Array.from({length:S},()=>new Array(S).fill(C.WALL));
+  const shuf=(a)=>{ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+  const carve=(r,c)=>{ g[r][c]=C.EMPTY;
+    for(const[dr,dc]of shuf([[-2,0],[2,0],[0,-2],[0,2]])){ const nr=r+dr,nc=c+dc;
+      if(nr>0&&nr<S-1&&nc>0&&nc<S-1&&g[nr][nc]===C.WALL){ g[r+dr/2][c+dc/2]=C.EMPTY; carve(nr,nc); } } };
+  carve(1,1);
+  const paths=[]; for(let r=1;r<S-1;r++)for(let c=1;c<S-1;c++) if(g[r][c]===C.EMPTY && !(r===1&&c===1) && !(r===S-2&&c===S-2)) paths.push([r,c]);
+  shuf(paths);
+  const types=[C.TRIANGLE,C.SQUARE,C.CIRCLE,C.HEXAGON,C.STAR].slice(0,Math.min(2+depth,5));
+  const targets=[]; types.forEach((tp,i)=>{ if(paths[i]){ const[r,c]=paths[i]; g[r][c]=tp; targets.push(tp); } });
+  g[1][1]=C.START; g[S-2][S-2]=C.GOAL;
+  return { id:'endless', endless:true, depth, kicker:'ENDLESS',
+    title:{ko:`끝없는 탐험 ${depth}층`, en:`Endless · Depth ${depth}`}, max:10+depth*5,
+    theme:{wall:'#243a5a', path:'#0a1426', accent:'#3ad1ff'},
+    grid:g, objective:{type:'collect_shapes', targets, description:{ko:'도형을 모두 모아 출구로 가세요!', en:'Collect all shapes, then reach the exit!'}},
+    success:{ko:`${depth}층 통과! 더 깊이 들어가요!`, en:`Depth ${depth} cleared! Go deeper!`} };
+}
+function hashDate(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return h; }
 
 // ═══════════════════════════════════════════════════════════════════
 // SETTINGS (accessibility) + HAPTICS
@@ -1488,8 +1575,10 @@ class GameEngine {
   constructor(audio,tts,tactile,renderer){ this.audio=audio; this.tts=tts; this.tactile=tactile; this.renderer=renderer;
     this.worldIdx=0; this.grid=[]; this.player={r:1,c:1,facing:2}; this.collected=[]; this.score=0; this.obj=null;
     this._tick=0; this._raf=null; this._beacon=null; this._choice=null; }
-  load(idx){
-    this.worldIdx=idx; const w=WORLDS[idx]; if(!w)return;
+  load(idx){ this.endless=false; this.worldIdx=idx; this._applyWorld(WORLDS[idx], idx); }
+  loadEndless(depth){ this.endless=true; this._endlessDepth=depth; this.worldIdx=0; this._applyWorld(genEndless(depth), 2); }
+  _applyWorld(w, ambientIdx){
+    if(!w)return; this.world=w;
     this.grid=w.grid.map(r=>[...r]); this.collected=[]; this.score=0;
     this.obj=JSON.parse(JSON.stringify(w.objective)); this.obj._next=0; this.obj._filled=0;
     for(let r=0;r<this.grid.length;r++) for(let c=0;c<this.grid[r].length;c++)
@@ -1497,7 +1586,7 @@ class GameEngine {
     this.renderer.resize(this.grid[0].length,this.grid.length);
     document.getElementById('game-world-name').textContent=lang==='ko'?w.title.ko:w.title.en;
     this._score(); this._hud(); this._charCard(); this._challenge(); this._scheduleBeacon();
-    this.audio.startAmbient(idx); this.audio.setReverb(idx); this.audio.setListener(this.player.r,this.player.c,this.player.facing);
+    this.audio.startAmbient(ambientIdx); this.audio.setReverb(ambientIdx); this.audio.setListener(this.player.r,this.player.c,this.player.facing);
   }
   move(dr,dc){
     this.audio.resume();
@@ -1544,7 +1633,7 @@ class GameEngine {
       // first action announces, repeated actions cycle; long-press semantics simplified:
       this._choice.opt=(this._choice.opt+1)%opts.length;
       const cand=opts[this._choice.opt];
-      const w=WORLDS[this.worldIdx]; const key=`${this._choice.r},${this._choice.c}`;
+      const w=this.world; const key=`${this._choice.r},${this._choice.c}`;
       const answer=w.patternAnswer?w.patternAnswer[key]:C.SQUARE;
       // double-confirm: if candidate equals answer announce & on next same action confirm
       this.audio.shape(cand);
@@ -1565,7 +1654,8 @@ class GameEngine {
     this._choice=null; this._hud(); this.tactile.update(this.grid,this.player.r,this.player.c,this.player.facing); }
   // Sonar scan — sweep N→E→S→W with directional pings + spoken report (key Q / button)
   sonar(){
-    this.audio.resume(); this.tts.speak(t('sonarStart'),true); this.renderer.ring(this.player.r,this.player.c,'#3ad1ff');
+    this.audio.resume(); Profile.data.sonarCount=(Profile.data.sonarCount||0)+1; Profile.save(); if(window.app) window.app._checkAchievements();
+    this.tts.speak(t('sonarStart'),true); this.renderer.ring(this.player.r,this.player.c,'#3ad1ff');
     DIR.forEach((d,i)=>{ setTimeout(()=>{
       let dist=6, found=false;
       for(let k=1;k<=6;k++){ const rr=this.player.r+d.dr*k, cc=this.player.c+d.dc*k;
@@ -1616,18 +1706,14 @@ class GameEngine {
     if(o.type==='sequence_numbers') return o.targets.length-(o._next||0);
     if(o.type==='fill_patterns') return o.blanks-(o._filled||0); return 0; }
   _complete(){
-    const w=WORLDS[this.worldIdx]; this.audio.success();
+    const w=this.world; this.audio.success();
     this.renderer.burst(this.player.r,this.player.c,'#ffd54a'); this.renderer.ring(this.player.r,this.player.c,'#ffd54a');
     this._dialogue(lang==='ko'?w.success.ko:w.success.en);
-    const earned=w.max; Profile.award(w.id,earned);
-    const sm=document.getElementById('success-modal');
-    document.getElementById('success-title-text').textContent=lang==='ko'?w.title.ko:w.title.en;
-    document.getElementById('success-body').textContent=lang==='ko'?w.success.ko:w.success.en;
-    document.getElementById('success-stars').innerHTML=svgIcon('star',{size:38,color:'#ffd54a'}).repeat(3);
-    document.getElementById('btn-next').style.display=(this.worldIdx+1<WORLDS.length)?'':'none';
-    sm.classList.remove('hidden'); document.getElementById('btn-next').focus();
+    Profile.data.plays=(Profile.data.plays||0)+1;
+    if(this.endless){ const d=this._endlessDepth||1; if(d>(Profile.data.endlessBest||0)) Profile.data.endlessBest=d; Profile.addStars(5+d*2); }
+    else { Profile.award(w.id, w.max); }
     if(this._beacon) clearInterval(this._beacon);
-    if(window.app) window.app.refreshProfile();
+    if(window.app) window.app._afterComplete({ endless:this.endless, worldIdx:this.worldIdx, depth:this._endlessDepth, world:w });
   }
   _hud(){
     const dirs=t('dirs');
@@ -1697,7 +1783,7 @@ class GameEngine {
         if(this.grid[r][c]===type){ const dist=Math.abs(r-this.player.r)+Math.abs(c-this.player.c); if(dist<nd){nd=dist;near={type,r,c};} } });
       if(near&&nd<=6) this.audio.beacon3d(near.type,near.r,near.c);
     },2600); }
-  start(){ const loop=()=>{ this._tick++; const w=WORLDS[this.worldIdx];
+  start(){ const loop=()=>{ this._tick++; const w=this.world;
     this.renderer.draw({grid:this.grid,player:this.player,theme:w?w.theme:{},collected:this.collected,obj:this.obj},this._tick);
     this._raf=requestAnimationFrame(loop); }; this._raf=requestAnimationFrame(loop); }
   stop(){ if(this._raf) cancelAnimationFrame(this._raf); if(this._beacon) clearInterval(this._beacon); this.audio.stopAmbient(); }
@@ -1811,11 +1897,71 @@ class App {
     document.getElementById('xp-fill').style.width=xpInLevel+'%';
     document.getElementById('xp-text').textContent=`${xpInLevel} / 100 XP`;
     document.getElementById('player-avatar').style.backgroundImage="url('./maze_character.png')";
-    this._buildWorlds();
     // unlock logic: world i unlocked if previous completed
     this._highestUnlocked=0;
-    for(let i=0;i<WORLDS.length;i++){ if(i===0||(Profile.data.worldStars[WORLDS[i-1].id]||0)>0) this._highestUnlocked=i; else break; }
+    for(let i=0;i<WORLDS.length;i++){ if(i===0||(d.worldStars[WORLDS[i-1].id]||0)>0) this._highestUnlocked=i; else break; }
+    this._buildWorlds();
+    // daily challenge + streak
+    const daily=this._dailyChallenge(); this._dailyIdx=daily.idx; this._dailyReward=daily.reward;
+    const dw=WORLDS[daily.idx], doneToday=d.dailyDoneDate===Profile.today();
+    const mt=document.getElementById('mission-text'); if(mt) mt.textContent = doneToday
+      ? (lang==='ko'?'오늘의 도전 완료! 내일 또 만나요.':'Daily done — see you tomorrow!')
+      : (lang==='ko'?`${dw.title.ko}을(를) 클리어하세요`:`Clear ${dw.title.en}`);
+    const mrv=document.getElementById('mission-reward-val'); if(mrv) mrv.textContent=daily.reward;
+    const ms=document.getElementById('mission-streak'); if(ms) ms.textContent=(d.streak||0)>0?(lang==='ko'?`🔥 ${d.streak}일 연속`:`🔥 ${d.streak}-day streak`):'';
   }
+  _dailyChallenge(){ const count=Math.max(1,(this._highestUnlocked||0)+1); const idx=hashDate(Profile.today())%count; return {idx, reward:15}; }
+  _checkAchievements(defer){ const newly=[]; ACHIEVEMENTS.forEach(a=>{ if(!Profile.hasAch(a.id)&&a.check(Profile.data)){ Profile.addAch(a.id); newly.push(a); } });
+    if(newly.length){ this.refreshProfile(); if(!defer) newly.forEach(a=>this._celebrate((lang==='ko'?'업적 달성: ':'Achievement: ')+(lang==='ko'?a.ko:a.en))); }
+    return newly; }
+  _celebrate(text){ Haptic.buzz([0,40,40,40,40,90]); this._toast(text); this.tts.speak(text); }
+  _toast(text){ const el=document.getElementById('toast'); if(!el)return; el.textContent=text; el.classList.add('show');
+    clearTimeout(this._toastT); this._toastT=setTimeout(()=>el.classList.remove('show'),3400); }
+  _afterComplete(info){
+    const w=info.world;
+    document.getElementById('success-title-text').textContent=lang==='ko'?w.title.ko:w.title.en;
+    document.getElementById('success-body').textContent=lang==='ko'?w.success.ko:w.success.en;
+    document.getElementById('success-stars').innerHTML=svgIcon('star',{size:38,color:'#ffd54a'}).repeat(3);
+    if(info.endless){ this._next={type:'endless',depth:(info.depth||1)+1}; }
+    else { const nx=info.worldIdx+1; this._next=nx<WORLDS.length?{type:'world',idx:nx}:null; }
+    document.getElementById('btn-next').style.display=this._next?'':'none';
+    let dailyMsg='';
+    if(!info.endless && info.worldIdx===this._dailyIdx){ const r=Profile.markDailyDone();
+      if(r.firstToday){ Profile.addStars(this._dailyReward||15);
+        dailyMsg=(lang==='ko'?`오늘의 도전 완료! ${r.streak}일 연속! 별 +${this._dailyReward}`:`Daily done! ${r.streak}-day streak! +${this._dailyReward} stars`); } }
+    const newAch=this._checkAchievements(true);
+    this.refreshProfile();
+    document.getElementById('success-modal').classList.remove('hidden'); document.getElementById('btn-next').focus();
+    setTimeout(()=>{ if(dailyMsg) this._celebrate(dailyMsg);
+      newAch.forEach(a=>this._celebrate((lang==='ko'?'업적 달성: ':'Achievement: ')+(lang==='ko'?a.ko:a.en))); }, 1100);
+  }
+  _doNext(){ document.getElementById('success-modal').classList.add('hidden'); const n=this._next;
+    if(n&&n.type==='endless') this._startEndless(n.depth);
+    else if(n&&n.type==='world'){ this._toHub(); this._openIntro(n.idx); }
+    else this._toHub(); }
+  _startEndless(depth){
+    this.audio.resume();
+    document.getElementById('intro-modal').classList.add('hidden');
+    document.getElementById('hub').classList.add('hidden');
+    document.getElementById('game').classList.remove('hidden');
+    this.input.setActive(true);
+    this.engine.loadEndless(depth); this.engine.start();
+    this.tactile.update(this.engine.grid,this.engine.player.r,this.engine.player.c,this.engine.player.facing);
+    document.getElementById('canvas-wrap').focus(); this.renderer.fit();
+    const w=this.engine.world;
+    this._announce(`${lang==='ko'?w.title.ko:w.title.en}. ${lang==='ko'?w.objective.description.ko:w.objective.description.en}`);
+    setTimeout(()=>this.engine._dialogue(lang==='ko'?w.objective.description.ko:w.objective.description.en),450);
+  }
+  _openAchievements(){ const g=document.getElementById('ach-grid'); if(!g)return; g.innerHTML='';
+    let got=0; ACHIEVEMENTS.forEach(a=>{ const has=Profile.hasAch(a.id); if(has)got++;
+      const d=document.createElement('div'); d.className='ach-item'+(has?' got':'');
+      d.innerHTML=`<div class="ach-ic">${has?svgIcon('star',{size:22,color:'#ffd54a'}):svgIcon('lock',{size:18})}</div>
+        <div class="ach-txt"><div class="ach-name">${lang==='ko'?a.ko:a.en}</div><div class="ach-desc">${lang==='ko'?a.dko:a.den}</div></div>`;
+      g.appendChild(d); });
+    const sub=document.getElementById('ach-sub'); if(sub) sub.textContent=`${got} / ${ACHIEVEMENTS.length}`;
+    document.getElementById('ach-modal').classList.remove('hidden');
+    document.getElementById('btn-ach-close').focus(); }
+  _closeAch(){ document.getElementById('ach-modal').classList.add('hidden'); }
   _buildLogo(){ const el=document.getElementById('brand-logo'); el.innerHTML='';
     const on=new Set([2,6,8,10,12,14,16,18,22]); // diagonal-ish dot pattern
     for(let i=0;i<25;i++){ const d=document.createElement('i'); if(on.has(i)) d.className='on'; el.appendChild(d); } }
@@ -1837,6 +1983,13 @@ class App {
       // world-select grid
       if(wsGrid){ const c2=card.cloneNode(true); if(unlocked) c2.addEventListener('click',()=>{ this._closeWS(); this._openIntro(i); }); wsGrid.appendChild(c2); }
     });
+    // endless mode card (always available — infinite fresh mazes)
+    const mk=()=>{ const ec=document.createElement('button'); ec.className='world-card endless-card';
+      ec.innerHTML=`<div class="world-overlay"></div><div class="world-num" style="background:#3ad1ff33;color:#fff">∞</div>
+        <div class="world-info"><div class="world-name">${lang==='ko'?'끝없는 탐험':'Endless'}</div>
+        <div class="world-stars">${svgIcon('star',{size:14,color:'#3ad1ff'})} ${lang==='ko'?'최고 '+(Profile.data.endlessBest||0)+'층':'Best '+(Profile.data.endlessBest||0)}</div></div>`;
+      ec.addEventListener('click',()=>this._startEndless(1)); return ec; };
+    track.appendChild(mk()); if(wsGrid) wsGrid.appendChild(mk());
   }
   _openIntro(idx){
     this._worldIdx=idx; const w=WORLDS[idx];
@@ -1886,15 +2039,19 @@ class App {
     document.getElementById('btn-enter').addEventListener('click',()=>this._startWorld(this._worldIdx));
     document.getElementById('btn-back').addEventListener('click',()=>this._toHub());
     document.getElementById('btn-tohub').addEventListener('click',()=>this._toHub());
-    document.getElementById('btn-next').addEventListener('click',()=>{
-      document.getElementById('success-modal').classList.add('hidden');
-      const nx=this._worldIdx+1; if(nx<WORLDS.length){ this._toHub(); this._openIntro(nx); } else this._toHub();
-    });
+    document.getElementById('btn-next').addEventListener('click',()=>this._doNext());
     document.getElementById('btn-replay').addEventListener('click',()=>{
-      document.getElementById('success-modal').classList.add('hidden'); this._startWorld(this._worldIdx); });
+      document.getElementById('success-modal').classList.add('hidden');
+      if(this.engine.endless) this._startEndless(this.engine._endlessDepth||1); else this._startWorld(this._worldIdx); });
+    // daily mission card → start today's challenge world
+    const mc=document.getElementById('mission-card'); if(mc) mc.addEventListener('click',()=>{ this.audio.resume(); this._openIntro(this._dailyIdx||0); });
+    // achievements viewer (badges stat)
+    const ab=document.getElementById('stat-badges-btn'); if(ab) ab.addEventListener('click',()=>this._openAchievements());
+    const ac=document.getElementById('btn-ach-close'); if(ac) ac.addEventListener('click',()=>this._closeAch());
+    const am=document.getElementById('ach-modal'); if(am) am.addEventListener('click',e=>{ if(e.target.id==='ach-modal') this._closeAch(); });
     document.getElementById('btn-lang').addEventListener('click',()=>{
       lang=lang==='ko'?'en':'ko'; const lc=document.getElementById('lang-code'); if(lc) lc.textContent=lang.toUpperCase();
-      document.documentElement.lang=lang; this._i18n(); this._reflectTTS(Settings.data.tts); this._dotpadStatus(DotPad.isConnected()); this._buildWorlds(); this.engine._challenge(); this.engine._hud();
+      document.documentElement.lang=lang; this._i18n(); this._reflectTTS(Settings.data.tts); this._dotpadStatus(DotPad.isConnected()); this.refreshProfile(); this.engine._challenge(); this.engine._hud();
     });
     document.getElementById('btn-tts').addEventListener('click',()=>{ const on=this.tts.toggle();
       Settings.data.tts=on; Settings.save(); this._reflectTTS(on); });
@@ -1920,12 +2077,13 @@ class App {
     // Escape closes settings / world-select
     window.addEventListener('keydown',e=>{ if(e.key==='Escape'){
       if(!document.getElementById('settings-modal').classList.contains('hidden')) this._closeSettings();
+      else if(!document.getElementById('ach-modal').classList.contains('hidden')) this._closeAch();
       else if(!document.getElementById('ws-modal').classList.contains('hidden')) this._closeWS(); } });
     window.addEventListener('resize',()=>this.renderer.fit());
   }
   _i18n(){ document.querySelectorAll('[data-i]').forEach(el=>{ const k=el.dataset.i; const v=t(k); if(typeof v==='string') el.textContent=v; });
-    // mission text localized
-    document.getElementById('mission-text').textContent=lang==='ko'?'삼각형 열쇠를 찾아 문을 여세요.':'Find the triangle key to unlock the gate.';
+    // (mission text is set by refreshProfile from the daily challenge)
+    document.getElementById('ach-modal')&&this._closeAch&&null;
   }
   _starfield(){ const cv=document.getElementById('starfield'); const ctx=cv.getContext('2d');
     const resize=()=>{ cv.width=innerWidth; cv.height=innerHeight; }; resize(); window.addEventListener('resize',resize);
