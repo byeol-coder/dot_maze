@@ -669,6 +669,8 @@ body.rm *,body.rm *::before,body.rm *::after{animation:none !important;transitio
         <input type="range" id="set-rate" min="0.6" max="1.4" step="0.05" class="set-range"></label>
       <label class="set-row"><span data-i="set_vol">소리 크기</span>
         <input type="range" id="set-vol" min="0" max="1" step="0.05" class="set-range"></label>
+      <label class="set-row"><span data-i="set_music">음악 크기</span>
+        <input type="range" id="set-music" min="0" max="1" step="0.05" class="set-range"></label>
     </div>
     <button class="btn-primary" id="btn-set-close" style="justify-self:start"><span data-i="set_close">닫기</span></button>
   </div>
@@ -887,7 +889,7 @@ const T = {
     meet:'만나기', step:'밟기', blankN:'빈칸', findExit:'소리로 출구 찾기',
     scan:'주변 스캔', settings:'설정', sonarStart:'주변을 살펴봅니다.',
     sonarWall:'벽', sonarOpen:'열린 길', steps:'칸',
-    set_tts:'음성 안내', set_rate:'말하기 속도', set_vol:'소리 크기', set_haptic:'진동',
+    set_tts:'음성 안내', set_rate:'말하기 속도', set_vol:'소리 크기', set_music:'음악 크기', set_haptic:'진동',
     set_contrast:'고대비 화면', set_motion:'모션 줄이기', set_close:'닫기',
     lg_you:'나', lg_target:'목표', voiceOn:'음성 켜짐', voiceOff:'음성 꺼짐',
     ctl_move:'이동', ctl_scan:'스캔', ctl_act:'상호작용', toHubMsg:'메인 화면으로 돌아왔어요.',
@@ -916,7 +918,7 @@ const T = {
     meet:'meet', step:'step', blankN:'Blank', findExit:'Find exit by sound',
     scan:'Scan', settings:'Settings', sonarStart:'Scanning around you.',
     sonarWall:'wall', sonarOpen:'open path', steps:'steps',
-    set_tts:'Voice guide', set_rate:'Speech rate', set_vol:'Volume', set_haptic:'Vibration',
+    set_tts:'Voice guide', set_rate:'Speech rate', set_vol:'Volume', set_music:'Music', set_haptic:'Vibration',
     set_contrast:'High contrast', set_motion:'Reduce motion', set_close:'Close',
     lg_you:'You', lg_target:'Target', voiceOn:'Voice On', voiceOff:'Voice Off',
     ctl_move:'Move', ctl_scan:'Scan', ctl_act:'Interact', toHubMsg:'Back to the main screen.',
@@ -948,12 +950,33 @@ class AudioEngine {
   constructor(){ this._ctx=null; this._on=true; this._master=null; this._ambient=null; }
   get ctx(){ if(!this._ctx){ const C=window.AudioContext||window.webkitAudioContext; this._ctx=new C();
     this._master=this._ctx.createGain(); this._master.gain.value=Settings.data.volume; this._master.connect(this._ctx.destination);
+    // music sub-mix (ambient + melody), separately controllable + auto-duck under speech
+    this._musicGain=this._ctx.createGain(); this._musicGain.gain.value=(Settings.data.musicVolume==null?0.45:Settings.data.musicVolume); this._musicGain.connect(this._master);
     // reverb send (per-world acoustic space)
     try{ this._reverb=this._ctx.createConvolver(); this._reverbGain=this._ctx.createGain(); this._reverbGain.gain.value=.16;
       this._reverb.buffer=this._makeImpulse(1.6,2.6); this._reverb.connect(this._reverbGain); this._reverbGain.connect(this._master); }catch(e){}
   } return this._ctx; }
   resume(){ if(this._ctx&&this._ctx.state==='suspended') this._ctx.resume(); }
   setVolume(v){ this.ctx; if(this._master) this._master.gain.setTargetAtTime(v,this._ctx.currentTime,0.05); }
+  setMusicVolume(v){ this._musicVol=v; this._applyMusic(); }
+  duck(on){ this._ducked=on; this._applyMusic(); }
+  _applyMusic(){ this.ctx; if(!this._musicGain)return; const base=this._musicVol==null?(Settings.data.musicVolume==null?0.45:Settings.data.musicVolume):this._musicVol;
+    this._musicGain.gain.setTargetAtTime(base*(this._ducked?0.28:1), this._ctx.currentTime, 0.15); }
+  _note(freq,dur,vol,pan){ if(!this._on||!this._musicGain)return; try{ const ctx=this.ctx,o=ctx.createOscillator(),g=ctx.createGain(),p=ctx.createStereoPanner();
+    o.type='sine'; o.frequency.value=freq; p.pan.value=pan||0;
+    g.gain.setValueAtTime(0,ctx.currentTime); g.gain.linearRampToValueAtTime(vol,ctx.currentTime+0.25); g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+dur);
+    o.connect(g); g.connect(p); p.connect(this._musicGain); o.start(); o.stop(ctx.currentTime+dur+.05); }catch(e){} }
+  startMelody(idx){ this.stopMelody(); if(!this._on)return;
+    // per-world key, scale (semitones), pace
+    const cfg=[ {base:261.63,scale:[0,2,4,7,9,12],ms:1150},  // forest: C major pentatonic, bright
+                {base:220.00,scale:[0,2,3,5,7,10],ms:1300},  // castle: A minor, stately
+                {base:130.81,scale:[0,3,7,10,12],ms:1900},   // cave: C low, sparse/mysterious
+                {base:196.00,scale:[0,2,3,5,7,9],ms:1450} ][idx]||{base:220,scale:[0,2,4,7,9],ms:1300};
+    let step=0; const play=()=>{ if(!this._on)return; step+=(Math.random()<.5?1:-1); if(step<0)step=1; if(step>cfg.scale.length-1)step=cfg.scale.length-2;
+      const semi=cfg.scale[step]+(Math.random()<.25?12:0); const f=cfg.base*Math.pow(2,semi/12);
+      this._note(f, 1.6+Math.random()*0.8, 0.10, (Math.random()*2-1)*0.4); };
+    play(); this._melodyTimer=setInterval(play, cfg.ms); }
+  stopMelody(){ if(this._melodyTimer){ clearInterval(this._melodyTimer); this._melodyTimer=null; } }
   _makeImpulse(sec,decay){ const ctx=this.ctx, rate=ctx.sampleRate, len=Math.max(1,Math.floor(rate*sec));
     const buf=ctx.createBuffer(2,len,rate);
     for(let ch=0;ch<2;ch++){ const d=buf.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay); }
@@ -995,15 +1018,16 @@ class AudioEngine {
     try{ const ctx=this.ctx; const base=[120,96,76,140][idx]||110; const nodes=[];
       const filt=ctx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=600;
       const amb=ctx.createGain(); amb.gain.value=0; amb.gain.setTargetAtTime(0.05,ctx.currentTime,2.5);
-      filt.connect(amb); amb.connect(this._master);
+      filt.connect(amb); amb.connect(this._musicGain);
       [base,base*1.5,base*2.01].forEach((f,i)=>{ const o=ctx.createOscillator(); o.type=i===2?'triangle':'sine';
         o.frequency.value=f; const og=ctx.createGain(); og.gain.value=i===2?0.14:0.4; o.connect(og); og.connect(filt); o.start(); nodes.push(o); });
       const lfo=ctx.createOscillator(); lfo.frequency.value=0.07; const lg=ctx.createGain(); lg.gain.value=320;
       lfo.connect(lg); lg.connect(filt.frequency); lfo.start(); nodes.push(lfo);
       this._ambient={nodes,amb};
     }catch(e){}
+    this.startMelody(idx);
   }
-  stopAmbient(){ if(this._ambient){ try{ const ctx=this.ctx; this._ambient.amb.gain.setTargetAtTime(0,ctx.currentTime,0.4);
+  stopAmbient(){ this.stopMelody(); if(this._ambient){ try{ const ctx=this.ctx; this._ambient.amb.gain.setTargetAtTime(0,ctx.currentTime,0.4);
     const ns=this._ambient.nodes; setTimeout(()=>ns.forEach(n=>{try{n.stop();}catch(e){}}),700); }catch(e){} this._ambient=null; } }
   footstep(pan=0){ const w=this._worldIdx||0;
     const mat=[[190,95,'sine'],[150,78,'square'],[120,60,'triangle'],[175,92,'sine']][w]||[190,95,'sine'];
@@ -1041,9 +1065,10 @@ class TTSEngine {
   }
   _flush(){ if(this._busy||!this._q.length)return;
     const text=this._q.shift(); this._last=text; this._busy=true;
+    if(window.app&&window.app.audio) window.app.audio.duck(true); // dim music while speaking
     const u=new SpeechSynthesisUtterance(text);
     u.lang=lang==='ko'?'ko-KR':'en-US'; u.rate=Settings.data.rate; u.pitch=1.05; u.volume=Math.min(1,Settings.data.volume+0.2);
-    u.onend=u.onerror=()=>{ this._busy=false; this._flush(); };
+    u.onend=u.onerror=()=>{ this._busy=false; if(!this._q.length && window.app&&window.app.audio) window.app.audio.duck(false); this._flush(); };
     speechSynthesis.speak(u);
     const el=document.getElementById('tts-text'); if(el) el.textContent=text;
     const live=document.getElementById('a11y-live'); if(live) live.textContent=text;
@@ -1506,7 +1531,7 @@ function hashDate(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt
 // SETTINGS (accessibility) + HAPTICS
 // ═══════════════════════════════════════════════════════════════════
 const Settings = {
-  data:{ tts:true, rate:0.94, volume:0.8, haptics:true, hapticIntensity:0.8, threeD:true, highContrast:false,
+  data:{ tts:true, rate:0.94, volume:0.8, musicVolume:0.45, haptics:true, hapticIntensity:0.8, threeD:true, highContrast:false,
     reduceMotion:(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)||false },
   load(){ try{ const s=localStorage.getItem('shapecraft_settings'); if(s) this.data={...this.data,...JSON.parse(s)}; }catch(e){} },
   save(){ try{ localStorage.setItem('shapecraft_settings',JSON.stringify(this.data)); }catch(e){} },
@@ -1872,7 +1897,7 @@ class App {
   _applySettings(){
     document.body.classList.toggle('hc',Settings.data.highContrast);
     document.body.classList.toggle('rm',Settings.data.reduceMotion);
-    this.tts._on=Settings.data.tts; this.audio.setVolume(Settings.data.volume);
+    this.tts._on=Settings.data.tts; this.audio.setVolume(Settings.data.volume); this.audio.setMusicVolume(Settings.data.musicVolume);
     this._reflectTTS(Settings.data.tts);
   }
   _openSettings(){
@@ -1882,6 +1907,7 @@ class App {
     document.getElementById('set-motion').checked=Settings.data.reduceMotion;
     document.getElementById('set-rate').value=Settings.data.rate;
     document.getElementById('set-vol').value=Settings.data.volume;
+    document.getElementById('set-music').value=Settings.data.musicVolume;
     document.getElementById('set-haptic-int').value=Settings.data.hapticIntensity;
     document.getElementById('set-3d').checked=Settings.data.threeD;
     document.getElementById('settings-modal').classList.remove('hidden');
@@ -1898,6 +1924,7 @@ class App {
     document.getElementById('set-rate').addEventListener('change',()=>this.tts.speak(lang==='ko'?'말하기 속도예요.':'This is the speech rate.',true));
     document.getElementById('set-vol').addEventListener('input',e=>{Settings.data.volume=parseFloat(e.target.value);this.audio.setVolume(Settings.data.volume);Settings.save();});
     document.getElementById('set-vol').addEventListener('change',()=>this.audio.hint());
+    document.getElementById('set-music').addEventListener('input',e=>{Settings.data.musicVolume=parseFloat(e.target.value);this.audio.setMusicVolume(Settings.data.musicVolume);Settings.save();});
     document.getElementById('set-haptic-int').addEventListener('input',e=>{Settings.data.hapticIntensity=parseFloat(e.target.value);Settings.save();});
     document.getElementById('set-haptic-int').addEventListener('change',()=>Haptic.buzz([0,60]));
     document.getElementById('set-3d').addEventListener('change',e=>{Settings.data.threeD=e.target.checked;Settings.save();this._apply3D();});
